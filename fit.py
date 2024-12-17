@@ -8,10 +8,10 @@ ROOT.gROOT.ProcessLineSync(".x src/NuOscIBDPdf.cxx+")
 
 ####################################################################################################
 ## Constants, common variables
-elemNames = ["U235", "Pu239", "Pu241"]
+elemNames = ["U235", "U238", "Pu239", "Pu241"]
 ## The Observable is v_NuE
 v_NuE = ROOT.RooRealVar("v_NuE", "Neutrino Energy", 0, 10, unit="MeV")
-v_NuE.setBins(200)
+v_NuE.setBins(500)
 
 v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(2#theta_{13})", 0, 1)
 v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(2#theta_{14})", 0, 1)
@@ -35,7 +35,7 @@ v_dm14.setVal(2.0) ## To be measured, in eV^2
 ####################################################################################################
 ## (Maybe later) Consider the burn-up effect, 
 ## the fuel composition is a subject to be changed in time.
-v_elemFracs = [1., 0., 0.] ## FIXME: (1,0,0) for the initial version
+v_elemFracs = [1., 0., 0., 0.] ## FIXME: (1,0,0,0) for the initial version
 for i in range(len(v_elemFracs)):
     elemName = elemNames[i]
     elemFrac = v_elemFracs[i]
@@ -44,10 +44,13 @@ for i in range(len(v_elemFracs)):
 
 ####################################################################################################
 ## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
-fHM = ROOT.TFile("data/hubermueller.root")
+fHuber = ROOT.TFile("data/huber.root")
+fMueller = ROOT.TFile("data/mueller.root")
 grps_HM = []
 for elemName in elemNames:
-    grp = fHM.Get("g_"+elemName)
+    grp = fHuber.Get("g_"+elemName)
+    if grp is None or grp == None:
+        grp = fMueller.Get("g_"+elemName)
     grps_HM.append(grp)
 ####################################################################################################
 
@@ -58,8 +61,8 @@ grp_Xsec = fXsec.Get("g_LowE")
 
 pdf_NuE = ROOT.NuOscIBDPdf("pdf_NuE", "pdf_NuE", v_NuE, v_L,
                            v_sin13, v_dm13, v_sin14, v_dm14,
-                           v_elemFracs[0], v_elemFracs[1], v_elemFracs[2],
-                           grps_HM[0], grps_HM[1], grps_HM[2],
+                           v_elemFracs[0], v_elemFracs[1], v_elemFracs[2], v_elemFracs[3],
+                           grps_HM[0], grps_HM[1], grps_HM[2], grps_HM[3],
                            grp_Xsec)
 
 ####################################################################################################

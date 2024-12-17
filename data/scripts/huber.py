@@ -25,7 +25,7 @@ def cpp2Arr(n, obj):
     return a
 
 ## Build Huber-Mueller spectrum in TGraphAsymmErrors
-fout = ROOT.TFile("hubermueller.root", "recreate")
+fout = ROOT.TFile("huber.root", "recreate")
 
 elements = ["U235", "Pu239", "Pu241"]
 grps = []
