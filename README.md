@@ -2,15 +2,17 @@
 ## Initial setup
 One has to install pyROOT to run this tool.
 For convenience, numpy is required as well.
-```
+```bash
 conda create -n ds4hep -c conda-forge
+conda activate ds4hep
+
 conda install root -c conda-forge -y
 conda install numpy -c conda-forge -y
 #conda install matplotlib -c conda-forge -y
 ```
 
 Prepare neutrino spectrum and cross section table.
-```
+```bash
 cd data
 python ./scripts/huber.py
 python ./scripts/mueller.py
@@ -18,16 +20,22 @@ python ./scripts/ibdxsec.py
 cd ..
 ```
 
+Then you will have input root files
+```
+$ ls data
+huber.root  ibdxsec.root  mueller.root  neos.root  reno.root  scripts
+```
+
 Export data of past experiments, RENO and NEOS data.
 This output file is to be used later for cross-experiment results.
-```
+```bash
 cd data
 python ./scripts/reno_neos_to_root.py
 cd ..
 ```
 
 Fit functions has to be compiled using the (py)ROOT.
-```
+```bash
 python -i fit.py
 ```
 
