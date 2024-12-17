@@ -1,0 +1,6 @@
+#.gitignore
+*.pcm
+*.d
+*.swp
+*.pyc
+*.so
