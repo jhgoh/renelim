@@ -28,7 +28,7 @@ cd ..
 Then you will have input root files
 ```
 $ ls data
-huber.root  ibdxsec.root  mueller.root  neos.root  reno.root  scripts
+huber.root  ibdxsec.root  mueller.root  scripts
 ```
 
 Export data of past experiments, RENO and NEOS data.
