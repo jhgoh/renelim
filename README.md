@@ -14,6 +14,11 @@ conda install numpy -c conda-forge -y
 Prepare neutrino spectrum and cross section table.
 ```bash
 cd data
+mkdir original
+for ELEM in U235 Pu239 Pu241; do
+  curl https://www1.phys.vt.edu/~pahuber/reactorfluxes/$ELEM-anti-neutrino-flux-250keV.dat > original/$ELEM-anti-neutrino-flux-250keV.dat
+done
+
 python ./scripts/huber.py
 python ./scripts/mueller.py
 python ./scripts/ibdxsec.py
