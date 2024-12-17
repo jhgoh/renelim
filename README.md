@@ -1,6 +1,37 @@
 # RENELim: Limit calculation for RENE project
-## 
-## Data files
+## Initial setup
+One has to install pyROOT to run this tool.
+For convenience, numpy is required as well.
+```
+conda create -n ds4hep -c conda-forge
+conda install root -c conda-forge -y
+conda install numpy -c conda-forge -y
+#conda install matplotlib -c conda-forge -y
+```
+
+Prepare neutrino spectrum and cross section table.
+```
+cd data
+python ./scripts/huber.py
+python ./scripts/mueller.py
+python ./scripts/ibdxsec.py
+cd ..
+```
+
+Export data of past experiments, RENO and NEOS data.
+This output file is to be used later for cross-experiment results.
+```
+cd data
+python ./scripts/reno_neos_to_root.py
+cd ..
+```
+
+Fit functions has to be compiled using the (py)ROOT.
+```
+python -i fit.py
+```
+
+## Reference of original data files
 Huber-Mueller flux
 - Paper: https://journals.aps.org/prc/abstract/10.1103/PhysRevC.84.024617
 - Title: Determination of antineutrino spectra from nuclear reactors
