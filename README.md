@@ -41,7 +41,7 @@ cd ..
 
 Fit functions has to be compiled using the (py)ROOT.
 ```bash
-python -i fit.py
+python -i fit_spectral.py
 ```
 
 ## Reference of original data files
