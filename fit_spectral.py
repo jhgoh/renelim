@@ -26,6 +26,7 @@ v_sin13.setVal(0.093) ## 0.093 +- 0.008
 v_dm13.setVal(24.4E-4) ## 24.4 +- 0.6 * 10^-4 eV^2 in normal hierarchy
 v_L.setVal(20) ## 20 meter
 #v_L.setVal(294) ## 294 meter
+#v_L.setVal(419) ## 419 meter, flux-weighted baseline of 6 reactors
 
 v_sin14.setVal(0.1) ## To be measured
 v_dm14.setVal(2.0) ## To be measured, in eV^2
@@ -101,7 +102,7 @@ v_sin14.setVal(0)
 v_dm14.setVal(0)
 v_sin14.setConstant(True)
 v_dm14.setConstant(True)
-v_L.setVal(294) ## 294 meter
+v_L.setVal(419) ## 419 meter
 v_L.setConstant(True)
 #for v_elemFrac in v_elemFracs:
 #    v_elemFrac.setConstant(False)
