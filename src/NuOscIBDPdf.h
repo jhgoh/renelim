@@ -14,16 +14,16 @@ public:
   NuOscIBDPdf() = default;
   NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
       RooAbsReal& l, // baseline L (meter)
-      RooAbsReal& sin13, RooAbsReal& dm13, // sin^2(2theta_13), Delta m_13^2
-      RooAbsReal& sim14, RooAbsReal& dm14, // sin^2(2theta_14), Delta m_14^2
+      RooAbsReal& sin13, RooAbsReal& dm31, // sin^2(2theta_13), Delta m_13^2
+      RooAbsReal& sim14, RooAbsReal& dm41, // sin^2(2theta_14), Delta m_14^2
       RooAbsReal& fU235, RooAbsReal& fPu239, RooAbsReal& fPu241, // Fuel composition (no U238)
       const TGraph* grpU235, const TGraph* grpPu239, const TGraph* grpPu241, // Spectrum (Huber-Mueller)
       const TGraph* grpXsec // IBD Cross-section curve
   );
   NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
       RooAbsReal& l, // baseline L (meter)
-      RooAbsReal& sin13, RooAbsReal& dm13, // sin^2(2theta_13), Delta m_13^2
-      RooAbsReal& sim14, RooAbsReal& dm14, // sin^2(2theta_14), Delta m_14^2
+      RooAbsReal& sin13, RooAbsReal& dm31, // sin^2(2theta_13), Delta m_13^2
+      RooAbsReal& sim14, RooAbsReal& dm41, // sin^2(2theta_14), Delta m_14^2
       RooAbsReal& fU235, RooAbsReal& fU238, RooAbsReal& fPu239, RooAbsReal& fPu241, // Fuel composition
       const TGraph* grpU235, const TGraph* grpU238, const TGraph* grpPu239, const TGraph* grpPu241, // Spectrum (Huber-Mueller)
       const TGraph* grpXsec // IBD Cross-section curve
@@ -34,7 +34,7 @@ public:
 
 protected:
   RooRealProxy x_; // Variable
-  RooRealProxy l_, sin13_, dm13_, sin14_, dm14_; // Parameters
+  RooRealProxy l_, sin13_, dm31_, sin14_, dm41_; // Parameters
   RooRealProxy fU235_, fU238_, fPu239_, fPu241_;
 
   std::vector<double> xx_U235_, yy_U235_;
