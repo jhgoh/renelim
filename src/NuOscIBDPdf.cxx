@@ -11,15 +11,15 @@
 ClassImp(NuOscIBDPdf); 
 
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
-    RooAbsReal& l, RooAbsReal& sin13, RooAbsReal& dm13, RooAbsReal& sin14, RooAbsReal& dm14,
+    RooAbsReal& l, RooAbsReal& sin13, RooAbsReal& dm31, RooAbsReal& sin14, RooAbsReal& dm41,
     RooAbsReal& fU235, RooAbsReal& fPu239, RooAbsReal& fPu241,
     const TGraph* grpU235, const TGraph* grpPu239, const TGraph* grpPu241,
     const TGraph* grpXsec):
   RooAbsPdf(name, title),
   x_("x", "x", this, x),
   l_("l", "l", this, l),
-  sin13_("sin13", "sin13", this, sin13), dm13_("dm13", "dm13", this, dm13),
-  sin14_("sin14", "sin14", this, sin14), dm14_("dm14", "dm14", this, dm14),
+  sin13_("sin13", "sin13", this, sin13), dm31_("dm31", "dm31", this, dm31),
+  sin14_("sin14", "sin14", this, sin14), dm41_("dm41", "dm41", this, dm41),
   fU235_("fU235", "fU235", this, fU235),
   fU238_("fU238", "fU238", this, fU235), // Note copy dummy value from U235
   fPu239_("fPu239", "fPu239", this, fPu239), fPu241_("fPu241", "fPu241", this, fPu241),
@@ -33,15 +33,15 @@ NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
 }
 
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
-    RooAbsReal& l, RooAbsReal& sin13, RooAbsReal& dm13, RooAbsReal& sin14, RooAbsReal& dm14,
+    RooAbsReal& l, RooAbsReal& sin13, RooAbsReal& dm31, RooAbsReal& sin14, RooAbsReal& dm41,
     RooAbsReal& fU235, RooAbsReal& fU238, RooAbsReal& fPu239, RooAbsReal& fPu241,
     const TGraph* grpU235, const TGraph* grpU238, const TGraph* grpPu239, const TGraph* grpPu241,
     const TGraph* grpXsec):
   RooAbsPdf(name, title),
   x_("x", "x", this, x),
   l_("l", "l", this, l),
-  sin13_("sin13", "sin13", this, sin13), dm13_("dm13", "dm13", this, dm13),
-  sin14_("sin14", "sin14", this, sin14), dm14_("dm14", "dm14", this, dm14),
+  sin13_("sin13", "sin13", this, sin13), dm31_("dm31", "dm31", this, dm31),
+  sin14_("sin14", "sin14", this, sin14), dm41_("dm41", "dm41", this, dm41),
   fU235_("fU235", "fU235", this, fU235), fU238_("fU238", "fU238", this, fU238),
   fPu239_("fPu239", "fPu239", this, fPu239), fPu241_("fPu241", "fPu241", this, fPu241),
   hasU238_(true)
@@ -57,8 +57,8 @@ NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf& other, const char* name):
   RooAbsPdf(other, name),
   x_("x", this, other.x_),
   l_("l", this, other.l_),
-  sin13_("sin13", this, other.sin13_), dm13_("dm13", this, other.dm13_),
-  sin14_("sin14", this, other.sin14_), dm14_("dm14", this, other.dm14_),
+  sin13_("sin13", this, other.sin13_), dm31_("dm31", this, other.dm31_),
+  sin14_("sin14", this, other.sin14_), dm41_("dm41", this, other.dm41_),
   fU235_("fU235", this, other.fU235_), fU238_("fU238", this, other.fU238_),
   fPu239_("fPu239", this, other.fPu239_), fPu241_("fPu241", this, other.fPu241_),
   xx_U235_(other.xx_U235_), yy_U235_(other.yy_U235_),
@@ -109,13 +109,13 @@ double NuOscIBDPdf::evaluate() const
   if ( x <= 0 ) return 0; // safeguard for unphysical range
 
   const double sin13 = sin13_->getVal();
-  const double dm13 = dm13_->getVal();
-  const double sinD13 = std::sin(dm13*1.27*l/x); // 1.27 factor comes from 1/4 hbar c
+  const double dm31 = dm31_->getVal();
+  const double sinD13 = std::sin(dm31*1.27*l/x); // 1.27 factor comes from 1/4 hbar c
   const double prob13 = 1 - sin13 * sinD13 * sinD13;
 
   const double sin14 = sin14_->getVal();
-  const double dm14 = dm14_->getVal();
-  const double sinD14 = std::sin(dm14*1.27*l/x); // 1.27 factor comes from 1/4 hbar c
+  const double dm41 = dm41_->getVal();
+  const double sinD14 = std::sin(dm41*1.27*l/x); // 1.27 factor comes from 1/4 hbar c
   const double prob14 = prob13 - sin14 * sinD14 * sinD14;
 
   const double specU235 = fU235_->getVal() * interpolate(x, xx_U235_, yy_U235_);

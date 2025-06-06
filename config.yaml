@@ -1,0 +1,73 @@
+## Configuration to run the limit calculator
+## Physics models and constans
+physics:
+  ## True energy flux spectra
+  isotope_flux:
+    U235: "data/mueller.root:g_U235"
+    U238: "data/mueller.root:g_U238"
+    Pu239: "data/mueller.root:g_Pu239"
+    Pu241: "data/mueller.root:g_Pu241"
+    #U245: "data/huber.root:g_U245"
+    #Pu239: "data/huber.root:g_Pu239"
+    #Pu241: "data/huber.root:g_Pu241"
+
+  ## IBD cross section
+  ibd_xsec: "data/ibdxsec.root:g_HighE"
+
+  ## Oscillation parameters
+  oscillation:
+    sin12: 0.846  ## sin^2(2theta_12), solar neutrinos, ignored in our tool
+    sin13: 0.093 ## sin^2(2theta_13), reactor neutrinos
+    sin23: 0.985  ## sin^2(2theta_23), atmospheric neutrinos, ignored in our tool
+    dm21: 7.53e-5 ## delta m^2_21 (eV^2), ignored in our tool
+    dm31: 2.45e-3 ## delta m^2_32 (eV^2), Normal ordering
+    delta_cp: 4.014 ## radian, PDG2024/NuFIT5.1
+    #delta_cp: -1.720 ## radian, T2K(2021)
+
+## Detector configuration
+detectors:
+  - name: RENE0
+    position: [20.0, 0, -11.36] ## Location to be decided
+    efficiency: 0.8 ## To be updated
+    n_protons: 2.1e28 ## To be updated
+
+## Reactor configuration
+## Locations are found from Nucler Engineering and Technology 49 (2017) 813-819
+## Thermal power is taken from homepages
+reactors:
+  - name: Hanbit6
+    position: [0.0, 0.0, 0.0] # [x,y,z] in meters
+    power: 2.815 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]
+  - name: Hanbit5
+    position: [-217.7, -146.7, 0] # [x,y,z] in meters
+    power: 2.815 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]
+  - name: Hanbit4
+    position: [-408.2, -300.0, 0.0] # [x,y,z] in meters
+    power: 2.815 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]
+  - name: Hanbit3
+    position: [-616.8, -454.4, 0.0] # [x,y,z] in meters
+    power: 2.815 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]
+  - name: Hanbit2
+    position: [-816.4, -597.2, 0.0] # [x,y,z] in meters
+    power: 2.775 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]
+  - name: Hanbit1
+    position: [-1034.1, -750.0, 0.0] # [x,y,z] in meters
+    power: 2.775 # Thermal power in GW
+    elements:
+      name: [U235, U238, Pu239, Pu241]
+      fraction: [0.58, 0.08, 0.30, 0.04]

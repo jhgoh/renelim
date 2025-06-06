@@ -15,21 +15,21 @@ v_NuE.setBins(500)
 
 v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(2#theta_{13})", 0.093-3*0.008, 0.093+3*0.008)
 v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(2#theta_{14})", 0, 1)
-v_dm13 = ROOT.RooRealVar("v_dm13", "#Delta^{2}_{13}", 24.4E-4-3*0.6E-4, 24.4E-4+3*0.6E-4, unit="eV")
-v_dm14 = ROOT.RooRealVar("v_dm14", "#Delta^{2}_{14}", 0, 5, unit="eV")
+v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{13}", 24.4E-4-3*0.6E-4, 24.4E-4+3*0.6E-4, unit="eV")
+v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{14}", 0, 5, unit="eV")
 v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter") ## up to 10km for now.
 ####################################################################################################
 
 ####################################################################################################
 ## Set default values
 v_sin13.setVal(0.093) ## 0.093 +- 0.008
-v_dm13.setVal(24.4E-4) ## 24.4 +- 0.6 * 10^-4 eV^2 in normal hierarchy
+v_dm31.setVal(24.4E-4) ## 24.4 +- 0.6 * 10^-4 eV^2 in normal hierarchy
 v_L.setVal(20) ## 20 meter
 #v_L.setVal(294) ## 294 meter
 #v_L.setVal(419) ## 419 meter, flux-weighted baseline of 6 reactors
 
 v_sin14.setVal(0.1) ## To be measured
-v_dm14.setVal(2.0) ## To be measured, in eV^2
+v_dm41.setVal(2.0) ## To be measured, in eV^2
 ####################################################################################################
 
 ####################################################################################################
@@ -68,7 +68,7 @@ grp_Xsec = fXsec.Get("g_LowE")
 ####################################################################################################
 ## Build the PDF
 pdf_NuE = ROOT.NuOscIBDPdf("pdf_NuE", "pdf_NuE", v_NuE, v_L,
-                           v_sin13, v_dm13, v_sin14, v_dm14,
+                           v_sin13, v_dm31, v_sin14, v_dm41,
                            v_elemFracs[0], v_elemFracs[1], v_elemFracs[2], v_elemFracs[3],
                            grps_HM[0], grps_HM[1], grps_HM[2], grps_HM[3],
                            grp_Xsec)
@@ -97,11 +97,11 @@ dh_NEOS = ROOT.RooDataHist("dh_NEOS", "dh_NEOS", ROOT.RooArgSet(v_NuE), hNEOS)
 ####################################################################################################
 
 v_sin13.setConstant(False)
-v_dm13.setConstant(False)
+v_dm31.setConstant(False)
 v_sin14.setVal(0)
-v_dm14.setVal(0)
+v_dm41.setVal(0)
 v_sin14.setConstant(True)
-v_dm14.setConstant(True)
+v_dm41.setConstant(True)
 v_L.setVal(419) ## 419 meter
 v_L.setConstant(True)
 #for v_elemFrac in v_elemFracs:
