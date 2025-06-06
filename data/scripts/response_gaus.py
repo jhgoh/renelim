@@ -31,7 +31,7 @@ for eTrue in xvals:
   sumW.append(_sumW)
 
 ## Copy to the TH2D
-h = ROOT.TH2D("hResp_ENu_vs_EAe", "Response matrix of Kinematics;Neutrino energy (MeV);Positron energy (MeV)",
+h = ROOT.TH2D("hResp_ETrue_vs_EReco", "Detector response matrix;True energy (MeV);Measured energy (MeV)",
               len(xvals), xmin, xmax, len(yvals), ymin, ymax)
 for i in range(len(xvals)):
   for j in range(len(yvals)):
