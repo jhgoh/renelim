@@ -30,7 +30,8 @@ detectors:
     position: [20.0, 0, -11.36] ## Location to be decided
     efficiency: 0.8 ## To be updated
     n_protons: 2.1e28 ## To be updated
-    response: "data/response_ibd_gaus.root:hResp_ENu_vs_Ereco" ## response matrix TH2D, (x=E_nu, y=E_reco)
+    #response: "data/response_ibd_gaus.root:hResp_ENu_vs_Ereco" ## response matrix TH2D, (x=E_nu, y=E_reco)
+    response: "data/response_gaus.root:hResp_ETrue_vs_EReco" ## response matrix TH2D, (x=E_nu, y=E_reco)
 
 ## Reactor configuration
 ## Locations are found from Nucler Engineering and Technology 49 (2017) 813-819

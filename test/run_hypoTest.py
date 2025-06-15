@@ -81,6 +81,25 @@ baseline = baselines[reactorIdx]
 ###############################################################################
 
 ###############################################################################
+## Important parameters of interests
+## Define these variables in advance, to avoid possible buggy behaviours
+###############################################################################
+v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(#theta_{13})", 0, 1)
+v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 1)
+v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{31}", 0, 1, unit="eV^{2}")
+v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{41}", 0, 5, unit="eV^{2}")
+## Note: mind the ordering
+getattr(ws, 'import')(v_sin14)
+getattr(ws, 'import')(v_dm41)
+getattr(ws, 'import')(v_sin13)
+getattr(ws, 'import')(v_dm31)
+v_sin13 = ws.var('v_sin13')
+v_sin14 = ws.var('v_sin14')
+v_dm31 = ws.var('v_dm31')
+v_dm41 = ws.var('v_dm41')
+###############################################################################
+
+###############################################################################
 ## Neutrino energy spectrums
 ###############################################################################
 ## (Maybe later) Consider the burn-up effect, 
@@ -128,25 +147,11 @@ v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", minENu, maxENu, unit="MeV")
 v_ENu.setBins(nbinsENu)
 getattr(ws, 'import')(v_ENu)
 v_ENu = ws.var('v_ENu')
-v_ENu.setConstant(True)
 
 v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", minEReco, maxEReco, unit="MeV")
 v_EReco.setBins(nbinsEReco)
 getattr(ws, 'import')(v_EReco)
 v_EReco = ws.var('v_EReco')
-
-v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(#theta_{13})", 0, 1)
-v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 1)
-v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{31}", 0, 1, unit="eV^{2}")
-v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{41}", 0, 5, unit="eV^{2}")
-getattr(ws, 'import')(v_sin13)
-getattr(ws, 'import')(v_sin14)
-getattr(ws, 'import')(v_dm31)
-getattr(ws, 'import')(v_dm41)
-v_sin13 = ws.var('v_sin13')
-v_sin14 = ws.var('v_sin14')
-v_dm31 = ws.var('v_dm31')
-v_dm41 = ws.var('v_dm41')
 
 v_sin13.setVal(config.get("physics.oscillation.sin13"))
 v_dm31.setVal(config.get("physics.oscillation.dm31"))
@@ -206,6 +211,8 @@ pdf_EReco = ws.pdf('pdf_EReco')
 ################################################################################
 ## Start setting up RooStats
 ################################################################################
+v_ENu.setConstant(True)
+
 ws.factory('v_nSignal[0, 1e9]')
 v_nSignal = ws.var('v_nSignal')
 _model = ROOT.RooExtendPdf("model", "Signal-only PDF", pdf_EReco, v_nSignal) 
@@ -215,7 +222,7 @@ getattr(ws, 'import')(_model)
 mcNull = ROOT.RooStats.ModelConfig("mcNull", ws)
 mcNull.SetPdf(ws.pdf("model"))
 mcNull.SetObservables(ROOT.RooArgSet(v_EReco))
-mcNull.SetParametersOfInterest(ROOT.RooArgSet(v_sin14, v_dm41))
+mcNull.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
 
 v_nSignal.setVal(nSignal)
 v_nSignal.setConstant(True)
@@ -224,25 +231,27 @@ v_dm41.setVal(0.0)
 v_sin14.setConstant(True)
 v_dm41.setConstant(True)
 
-poi_nuis_params = ROOT.RooArgSet()
-poi_nuis_params.add(mcNull.GetParametersOfInterest())
+#poi_nuis_params = ROOT.RooArgSet()
+#poi_nuis_params.add(mcNull.GetParametersOfInterest())
 #poi_nuis_params.add(mcNull.GetNuisanceParameters())
-mcNull.SetSnapshot(poi_nuis_params)
+#mcNull.SetSnapshot(poi_nuis_params)
+mcNull.SetSnapshot(ws.allVars())
 
 ## Set the alternative hypothesis
 mcAlt = ROOT.RooStats.ModelConfig("mcAlt", ws)
 mcAlt.SetPdf(ws.pdf("model"))
 mcAlt.SetObservables(ROOT.RooArgSet(v_EReco))
-mcAlt.SetParametersOfInterest(ROOT.RooArgSet(v_sin14, v_dm41))
+mcAlt.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
 
 v_nSignal.setVal(nSignal)
-v_nSignal.setConstant(False)
+v_nSignal.setConstant(True)
 v_sin14.setVal(sin14)
 v_dm41.setVal(dm41)
 v_sin14.setConstant(False)
-v_dm41.setConstant(False)
+v_dm41.setConstant(True)
 
-mcAlt.SetSnapshot(poi_nuis_params)
+#mcAlt.SetSnapshot(poi_nuis_params)
+mcAlt.SetSnapshot(ws.allVars())
 
 ## Create Asimov dataset
 #asimovData = mcNull.GetPdf().generateAsimovData(ROOT.RooArgSet(mcNull.GetObservables()))
