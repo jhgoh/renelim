@@ -223,25 +223,33 @@ mcNull = ROOT.RooStats.ModelConfig("mcNull", ws)
 mcNull.SetPdf(ws.pdf("model"))
 mcNull.SetObservables(ROOT.RooArgSet(v_EReco))
 mcNull.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
+mcNull.SetNuisanceParameters(ROOT.RooArgSet())
 
 v_nSignal.setVal(nSignal)
 v_nSignal.setConstant(True)
 v_sin14.setVal(0.0)
 v_dm41.setVal(0.0)
-v_sin14.setConstant(True)
+v_sin14.setConstant(False)
 v_dm41.setConstant(True)
 
 #poi_nuis_params = ROOT.RooArgSet()
 #poi_nuis_params.add(mcNull.GetParametersOfInterest())
 #poi_nuis_params.add(mcNull.GetNuisanceParameters())
 #mcNull.SetSnapshot(poi_nuis_params)
+for p in ws.allVars():
+    print(p.GetName(), p.getVal(), p.isConstant())
 mcNull.SetSnapshot(ws.allVars())
+
+## Create Asimov dataset
+#asimovData = mcNull.GetPdf().generateAsimovData(ROOT.RooArgSet(mcNull.GetObservables()))
+asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mcNull, mcNull.GetObservables(), ROOT.RooArgSet())
 
 ## Set the alternative hypothesis
 mcAlt = ROOT.RooStats.ModelConfig("mcAlt", ws)
 mcAlt.SetPdf(ws.pdf("model"))
 mcAlt.SetObservables(ROOT.RooArgSet(v_EReco))
 mcAlt.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
+mcAlt.SetNuisanceParameters(ROOT.RooArgSet())
 
 v_nSignal.setVal(nSignal)
 v_nSignal.setConstant(True)
@@ -250,14 +258,23 @@ v_dm41.setVal(dm41)
 v_sin14.setConstant(False)
 v_dm41.setConstant(True)
 
+for p in ws.allVars():
+    print(p.GetName(), p.getVal(), p.isConstant())
 #mcAlt.SetSnapshot(poi_nuis_params)
 mcAlt.SetSnapshot(ws.allVars())
 
-## Create Asimov dataset
-#asimovData = mcNull.GetPdf().generateAsimovData(ROOT.RooArgSet(mcNull.GetObservables()))
-asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mcNull, mcNull.GetObservables(), ROOT.RooArgSet())
+#cAS = ROOT.TCanvas("cAS", "cAS", 500, 500)
+#frameAS = v_EReco.frame()
+#asimovData.plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlack), ROOT.RooFit.MarkerSize(1), ROOT.RooFit.DataError(getattr(ROOT.RooAbsData, "None")))
+#mcNull.LoadSnapshot()
+#mcNull.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlue))
+#mcAlt.LoadSnapshot()
+#mcAlt.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kRed))
+#frameAS.Draw()
 
 ## Scan over the parameters of interests
+mcAlt.LoadSnapshot()
+mcNull.LoadSnapshot()
 calc = ROOT.RooStats.AsymptoticCalculator(asimovData, mcAlt, mcNull)
 
 result = calc.GetHypoTest()
