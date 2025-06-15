@@ -13,7 +13,7 @@ parser.add_argument('input_eTrue_eReco', type=str,
                     help='Path to the ROOT file containing P(E_reco | E_true_e+). '
                          'Format: "filePath" or "filePath:histName"')
 parser.add_argument('-o', '--output', type=str,
-                    help='Path to the output. Format: "filePath" or "filePath:histName". default histName="hResp_Ereco_vs_ENu"')
+                    help='Path to the output. Format: "filePath" or "filePath:histName". default histName="hResp_ENu_vs_Ereco"')
 parser.add_argument('-g', '--gui', action='store_true', default=False,
                     help='Display the combined response matrix')
 args = parser.parse_args()
@@ -124,7 +124,7 @@ print(f"Axis info: x:{xaxis3}, y:{yaxis3}")
 ################################################################################
 outPath = args.output.split(':', 1)
 outFilePath = outPath[0]
-outHistName = outPath[1] if len(outPath) > 1 else "hResp_Ereco_vs_ENu"
+outHistName = outPath[1] if len(outPath) > 1 else "hResp_ENu_vs_Ereco"
 
 h3 = ROOT.TH2D(outHistName, "Response matrix;"+xaxis3[-1]+';'+yaxis3[-1],
                xaxis3[0], xaxis3[1], xaxis3[2],
