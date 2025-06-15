@@ -14,7 +14,7 @@ parser.add_argument('input_eTrue_eReco', type=str,
                          'Format: "filePath" or "filePath:histName"')
 parser.add_argument('-o', '--output', type=str,
                     help='Path to the output. Format: "filePath" or "filePath:histName". default histName="hResp_Ereco_vs_ENu"')
-parser.add_argument('-g', '--gui', action='store_true',
+parser.add_argument('-g', '--gui', action='store_true', default=False,
                     help='Display the combined response matrix')
 args = parser.parse_args()
 
@@ -148,6 +148,4 @@ if args.gui:
 fout = ROOT.TFile(outFilePath, "recreate")
 h3.Write()
 fout.Close()
-
-
 

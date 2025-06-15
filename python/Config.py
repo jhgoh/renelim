@@ -2,6 +2,7 @@
 import numpy as np
 import yaml
 import os
+import ROOT
 
 class Config:
   def __init__(self, path=None):
@@ -81,6 +82,16 @@ class ConfigRENE(Config):
       baselines.append(np.round(r, decimals=2))
 
     return baselines
+
+def getFileAndObj(path):
+  path = path.split(':', 1)
+  fPath = path[0]
+  hPath = path[1] if len(path) > 0 else None
+
+  f = ROOT.TFile(fPath)
+  h = f.Get(hPath)
+
+  return f, h
 
 if __name__ == '__main__':
     config = Config("config.yaml")
