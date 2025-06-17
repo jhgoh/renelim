@@ -1,9 +1,8 @@
 #!/usr/bin/env python
-#from tqdm import tqdm
 import argparse
 
 parser = argparse.ArgumentParser(description='Run the hypothesis tests for sin14 and dm41')
-parser.add_argument('-s', '--sin14', type=float, required=True,
+parser.add_argument('-s', '--sin14', type=str,
                     help='Oscillation parameter sin^2(2 theta_14)')
 parser.add_argument('-m', '--dm41', type=float, required=True,
                     help='Oscillation parameter Delta m^2_14')
@@ -11,12 +10,15 @@ parser.add_argument('-n', '--n_signal', type=float, required=True,
                     help='Number of expected signals')
 parser.add_argument('-o', '--output', type=str, required=True,
                     help='output ROOT file name to store HypoTestResult (result)')
+parser.add_argument('-g', '--gui', action='store_true',
+                    help='Display results using ROOT TCanvas')
 args = parser.parse_args()
 
 import sys
 import ROOT
 import numpy as np
 import resource
+from tqdm import tqdm
 
 print("@@@ Setting up...")
 print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
@@ -25,9 +27,26 @@ print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/10
 ## Set contants
 ###############################################################################
 nSignal = args.n_signal
-sin14 = args.sin14
 dm41 = args.dm41
 foutName = args.output
+
+sin14_toScan = [0.0]
+if args.sin14:
+  sin14_toScan = [float(x) for x in args.sin14.split(',')]
+  sin14_toScan = np.array(sin14_toScan)
+else:
+  sin14_toScan = np.concatenate([
+                   np.zeros(1),
+                   #np.arange(1e-4, 1e-3, 5e-5),
+                   #np.arange(1e-3, 1e-2, 5e-4),
+                   #np.arange(1e-2, 1e-1, 5e-3),
+                   #np.arange(1e-1, 1e-0, 1e-2),
+                   np.logspace(-4,1,10)*5
+                 ])
+  print("@@@ sin14 values are not given. Perform scanning with default points (may take 1 hour):")
+  print(sin14_toScan)
+
+sin14 = sin14_toScan[-1] ## Set a dummy value
 ###############################################################################
 
 ROOT.gStyle.SetOptStat(0)
@@ -89,10 +108,10 @@ v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 1)
 v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{31}", 0, 1, unit="eV^{2}")
 v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{41}", 0, 5, unit="eV^{2}")
 ## Note: mind the ordering
-getattr(ws, 'import')(v_sin14)
-getattr(ws, 'import')(v_dm41)
-getattr(ws, 'import')(v_sin13)
-getattr(ws, 'import')(v_dm31)
+ws.Import(v_sin14)
+ws.Import(v_dm41)
+ws.Import(v_sin13)
+ws.Import(v_dm31)
 v_sin13 = ws.var('v_sin13')
 v_sin14 = ws.var('v_sin14')
 v_dm31 = ws.var('v_dm31')
@@ -131,6 +150,7 @@ for elemName in elemNames:
     _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{elemName}'))
     ROOT.gROOT.cd()
     _grps_HM.append(grp.Clone())
+    del(grp)
 ################################################################################
 
 ###############################################################################
@@ -145,25 +165,39 @@ ROOT.gROOT.cd()
 ################################################################################
 v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", minENu, maxENu, unit="MeV")
 v_ENu.setBins(nbinsENu)
-getattr(ws, 'import')(v_ENu)
+ws.Import(v_ENu)
 v_ENu = ws.var('v_ENu')
 
 v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", minEReco, maxEReco, unit="MeV")
 v_EReco.setBins(nbinsEReco)
-getattr(ws, 'import')(v_EReco)
+ws.Import(v_EReco)
 v_EReco = ws.var('v_EReco')
 
-v_sin13.setVal(config.get("physics.oscillation.sin13"))
-v_dm31.setVal(config.get("physics.oscillation.dm31"))
-v_sin13.setConstant(True)
-v_dm31.setConstant(True)
+_sin13, _sin13err = config.get("physics.oscillation.sin13")
+_dm31, _dm31err = config.get("physics.oscillation.dm31")
+v_sin13.setVal(_sin13)
+v_dm31.setVal(_dm31)
+#v_sin13.setConstant(True)
+#v_dm31.setConstant(True)
+_v_constr_sin13_m = ROOT.RooConstVar("v_constr_sin13_m", "sin13_mean", _sin13)
+_v_constr_sin13_s = ROOT.RooConstVar("v_constr_sin13_s", "sin13_sigma", _sin13err)
+_v_constr_dm31_m = ROOT.RooConstVar("v_constr_dm31_m", "dm31_mean", _dm31)
+_v_constr_dm31_s = ROOT.RooConstVar("v_constr_dm31_s", "dm31_sigma", _dm31err)
+v_constr_sin13 = ROOT.RooGaussian("v_constr_sin13", "Constraint on sin13", v_sin13, _v_constr_sin13_m, _v_constr_sin13_s)
+v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31", v_dm31, _v_constr_dm31_m, _v_constr_dm31_s)
+ws.Import(v_constr_sin13)
+ws.Import(v_constr_dm31)
+v_constr_sin13 = ws.pdf('v_constr_sin13')
+v_constr_dm31 = ws.pdf('v_constr_dm31')
 
-v_sin14.setVal(0.0) ## No oscillation
-v_dm41.setVal(1.0) ## To be measured, in eV^2
+constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
+
+v_sin14.setVal(sin14)
+v_dm41.setVal(dm41)
 
 v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter") ## up to 10km for now.
 v_L.setVal(baseline)
-getattr(ws, 'import')(v_L)
+ws.Import(v_L)
 v_L = ws.var('v_L')
 v_L.setConstant(True)
 
@@ -172,7 +206,7 @@ pdf_ENu = ROOT.NuOscIBDPdf("pdf_ENu", "pdf_ENu", v_ENu, v_L,
                            v_elemFracs[0], v_elemFracs[1], v_elemFracs[2], v_elemFracs[3],
                            _grps_HM[0], _grps_HM[1], _grps_HM[2], _grps_HM[3],
                            _grp_Xsec)
-getattr(ws, 'import')(pdf_ENu)
+ws.Import(pdf_ENu)
 pdf_ENu = ws.pdf('pdf_ENu')
 ################################################################################
 
@@ -197,7 +231,7 @@ _pdf_Joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
 pdf_EReco = _pdf_Joint.createProjection(ROOT.RooArgSet(v_ENu))
 pdf_EReco.SetName("pdf_EReco")
 pdf_EReco.SetTitle("PDF of reconstructed energy")
-getattr(ws, 'import')(pdf_EReco)
+ws.Import(pdf_EReco)
 pdf_EReco = ws.pdf('pdf_EReco')
 
 ## Reduce precision of integrator for speed up
@@ -216,77 +250,132 @@ v_ENu.setConstant(True)
 ws.factory('v_nSignal[0, 1e9]')
 v_nSignal = ws.var('v_nSignal')
 _model = ROOT.RooExtendPdf("model", "Signal-only PDF", pdf_EReco, v_nSignal) 
-getattr(ws, 'import')(_model)
+ws.Import(_model)
+model = ws.pdf('model')
 
-## Set the null hypothesis
+vs_obs = ROOT.RooArgSet(v_EReco)
+vs_poi = ROOT.RooArgSet(v_sin14) #, v_dm41)
+vs_nui = ROOT.RooArgSet()
+vs_poi_nui = ROOT.RooArgSet()
+vs_poi_nui.add(vs_poi)
+vs_poi_nui.add(vs_nui)
+
+## Set the null hypothesis and keep the snapshot
 mcNull = ROOT.RooStats.ModelConfig("mcNull", ws)
-mcNull.SetPdf(ws.pdf("model"))
-mcNull.SetObservables(ROOT.RooArgSet(v_EReco))
-mcNull.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
-mcNull.SetNuisanceParameters(ROOT.RooArgSet())
+mcNull.SetPdf(model)
+mcNull.SetObservables(vs_obs)
+mcNull.SetParametersOfInterest(vs_poi)
+mcNull.SetNuisanceParameters(vs_nui)
 
 v_nSignal.setVal(nSignal)
-v_nSignal.setConstant(True)
+#v_nSignal.setConstant(True)
 v_sin14.setVal(0.0)
 v_dm41.setVal(0.0)
-v_sin14.setConstant(False)
+v_sin14.setConstant(True)
 v_dm41.setConstant(True)
 
-#poi_nuis_params = ROOT.RooArgSet()
-#poi_nuis_params.add(mcNull.GetParametersOfInterest())
-#poi_nuis_params.add(mcNull.GetNuisanceParameters())
-#mcNull.SetSnapshot(poi_nuis_params)
-for p in ws.allVars():
-    print(p.GetName(), p.getVal(), p.isConstant())
-mcNull.SetSnapshot(ws.allVars())
+mcNull.SetSnapshot(vs_poi_nui)
 
 ## Create Asimov dataset
-#asimovData = mcNull.GetPdf().generateAsimovData(ROOT.RooArgSet(mcNull.GetObservables()))
+#asimovData = mcNull.GetPdf().generateBinned(mcNull.GetObservables(), ROOT.RooFit.Extended(), ROOT.RooFit.Asimov())
 asimovData = ROOT.RooStats.AsymptoticCalculator.MakeAsimovData(mcNull, mcNull.GetObservables(), ROOT.RooArgSet())
 
-## Set the alternative hypothesis
+## Set the alternative hypothesis and keep the snapshot
 mcAlt = ROOT.RooStats.ModelConfig("mcAlt", ws)
-mcAlt.SetPdf(ws.pdf("model"))
-mcAlt.SetObservables(ROOT.RooArgSet(v_EReco))
-mcAlt.SetParametersOfInterest(ROOT.RooArgSet(v_sin14))#, v_dm41))
-mcAlt.SetNuisanceParameters(ROOT.RooArgSet())
+mcAlt.SetPdf(model)
+mcAlt.SetObservables(vs_obs)
+mcAlt.SetParametersOfInterest(vs_poi)
+mcAlt.SetNuisanceParameters(vs_nui)
 
 v_nSignal.setVal(nSignal)
 v_nSignal.setConstant(True)
 v_sin14.setVal(sin14)
 v_dm41.setVal(dm41)
-v_sin14.setConstant(False)
+v_sin14.setConstant(True)
 v_dm41.setConstant(True)
 
-for p in ws.allVars():
-    print(p.GetName(), p.getVal(), p.isConstant())
-#mcAlt.SetSnapshot(poi_nuis_params)
-mcAlt.SetSnapshot(ws.allVars())
+mcAlt.SetSnapshot(vs_poi_nui)
 
-#cAS = ROOT.TCanvas("cAS", "cAS", 500, 500)
-#frameAS = v_EReco.frame()
-#asimovData.plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlack), ROOT.RooFit.MarkerSize(1), ROOT.RooFit.DataError(getattr(ROOT.RooAbsData, "None")))
-#mcNull.LoadSnapshot()
-#mcNull.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlue))
-#mcAlt.LoadSnapshot()
-#mcAlt.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kRed))
-#frameAS.Draw()
+#msg = ROOT.RooMsgService.instance()
+#msg.setGlobalKillBelow(ROOT.RooFit.DEBUG)
 
-## Scan over the parameters of interests
-mcAlt.LoadSnapshot()
-mcNull.LoadSnapshot()
-calc = ROOT.RooStats.AsymptoticCalculator(asimovData, mcAlt, mcNull)
+## Calculate the likelihood
+nll = model.createNLL(asimovData, ROOT.RooFit.Constrain(constrs)) 
 
-result = calc.GetHypoTest()
+minimizer = ROOT.RooMinuit(nll)
+minimizer.setStrategy(2)
+minimizer.setPrintLevel(3)
+
+sin14_scanned = []
+nll_scanned = []
+for _sin14 in tqdm(sin14_toScan):
+    v_sin14.setVal(_sin14)
+    v_sin14.setConstant(True)
+
+    _status = minimizer.migrad()
+    _nll = nll.getVal()
+    if _status == -1:
+      print(f"Fit failure ({_status}): sin14={_sin14}, nll={_nll}")
+      continue
+    else:
+      sin14_scanned.append(_sin14)
+      nll_scanned.append(_nll)
+
+sin14_scanned = np.array(sin14_scanned)
+nll_scanned = np.array(nll_scanned)
+
+if len(sin14_scanned) == 0:
+  print("No successful fits")
+  exit()
+
+## Perform minimization to find a global minimum of this search
+_imin = np.argmin(nll_scanned)
+v_sin14.setVal(sin14_scanned[_imin])
+v_sin14.setConstant(False)
+minimizer.setStrategy(2)
+_status = minimizer.migrad()
+_sin14 = v_sin14.getVal()
+_nll = nll.getVal()
+if _sin14 not in sin14_scanned:
+  _iinsert = np.searchsorted(sin14_scanned, _sin14, side='left')
+  sin14_scanned = np.insert(sin14_scanned, _iinsert, _sin14)
+  nll_scanned = np.insert(nll_scanned, _iinsert, _nll)
+
+grpNLL = ROOT.TGraph(len(nll_scanned),
+                     np.ascontiguousarray(sin14_scanned, dtype='float'),
+                     np.ascontiguousarray(nll_scanned, dtype='float'))
+grpNLL.SetLineWidth(2)
+grpNLL.SetEditable(False)
+
+if args.gui:
+  cNLL = ROOT.TCanvas("cNLL", "cNLL", 500, 500)
+  grpNLL.Draw("ALP")
+  cNLL.Update()
+
+#calc = ROOT.RooStats.AsymptoticCalculator(asimovData, mcAlt, mcNull)
+#calc = ROOT.RooStats.HybridCalculator(asimovData, mcNull, mcAlt)
+#calc.SetOneSided(True)
+
+#result = calc.GetHypoTest()
 #signif = result.Significance()
 #signif = calc.ExpectedSignificance(mcAlt.GetParametersOfInterest())
 
-result.Print()
+if args.gui:
+  cAS = ROOT.TCanvas("cAS", "cAS", 500, 500)
+  frameAS = v_EReco.frame()
+  asimovData.plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlack), ROOT.RooFit.MarkerSize(1), ROOT.RooFit.DataError(getattr(ROOT.RooAbsData, "None")))
+  mcAlt.LoadSnapshot()
+  mcAlt.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kRed))
+  mcNull.LoadSnapshot()
+  mcNull.GetWS().pdf("model").plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlue))
+  frameAS.Draw()
+
+  input("")
 
 fout = ROOT.TFile(foutName, 'recreate')
-result.SetName("result")
-result.SetTitle("Test result sin^{2}(2#theta_{14})="+f"{sin14}"+"#Delta m^{2}_{41}="+f"{dm41}")
-result.Write()
+grpNLL.SetName("grpNLL")
+grpNLL.SetTitle("NLL scan for #Delta m^{2}_{41} = "+f"{dm41}"+";sin^{2}(2#theta_{14});-log(L)")
+grpNLL.Write()
 fout.Write()
 fout.Close()
 
