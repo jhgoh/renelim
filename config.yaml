@@ -16,13 +16,12 @@ physics:
 
   ## Oscillation parameters
   oscillation:
-    sin12: 0.846  ## sin^2(2theta_12), solar neutrinos, ignored in our tool
-    sin13: 0.093 ## sin^2(2theta_13), reactor neutrinos
-    sin23: 0.985  ## sin^2(2theta_23), atmospheric neutrinos, ignored in our tool
-    dm21: 7.53e-5 ## delta m^2_21 (eV^2), ignored in our tool
-    dm31: 2.45e-3 ## delta m^2_32 (eV^2), Normal ordering
-    delta_cp: 4.014 ## radian, PDG2024/NuFIT5.1
-    #delta_cp: -1.720 ## radian, T2K(2021)
+    sin12: [0.852, 0.013]  ## sin^2(2theta_12), solar neutrinos, ignored in our tool
+    sin13: [0.085, 0.005] ## sin^2(2theta_13), reactor neutrinos
+    sin23: [0.976, 0.020]  ## sin^2(2theta_23), atmospheric neutrinos, ignored in our tool
+    dm21: [7.53e-5, 1.8e-6] ## delta m^2_21 (eV^2), ignored in our tool
+    dm31: [2.45e-3, 3.0e-5] ## delta m^2_32 (eV^2), Normal ordering
+    delta_cp: [195, 25] ## degree, T2K(2021) and NOvA
 
 ## Detector configuration
 detectors:
