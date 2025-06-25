@@ -50,7 +50,7 @@ double PiecewiseLinearPdf::evaluate() const
   auto itr = std::lower_bound(xx_.begin(), xx_.end(), x);
   if ( itr == xx_.begin() or itr == xx_.end() ) {
     if ( x == xx_[0] ) return yy_[0]; // At boundary
-    else return 0; // Ouside of the boundary
+    else return 0; // Outside of the boundary
   }
 
   const size_t idx = itr - xx_.begin();

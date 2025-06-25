@@ -92,7 +92,7 @@ double NuOscIBDPdf::interpolate(const double x, const std::vector<double>& xx, c
   auto itr = std::lower_bound(xx.begin(), xx.end(), x);
   if ( itr == xx.begin() or itr == xx.end() ) {
     if ( x == xx[0] ) return yy[0]; // At boundary
-    else return 0; // Ouside of the boundary
+    else return 0; // Outside of the boundary
   }
 
   const size_t idx = itr - xx.begin();
