@@ -24,7 +24,7 @@ print("@@@ Setting up...")
 print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
 
 ###############################################################################
-## Set contants
+## Set constants
 ###############################################################################
 nSignal = args.n_signal
 dm41 = args.dm41
