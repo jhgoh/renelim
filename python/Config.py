@@ -84,9 +84,10 @@ class ConfigRENE(Config):
     return baselines
 
 def getFileAndObj(path):
+  """Return ROOT file and object; ``hPath`` is ``None`` if no colon is supplied."""
   path = path.split(':', 1)
   fPath = path[0]
-  hPath = path[1] if len(path) > 0 else None
+  hPath = path[1] if len(path) > 1 else None
 
   f = ROOT.TFile(fPath)
   h = f.Get(hPath)
