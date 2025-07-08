@@ -265,6 +265,9 @@ model = ws.pdf('model')
 vs_obs = ROOT.RooArgSet(v_EReco)
 vs_poi = ROOT.RooArgSet(v_sin14) #, v_dm41)
 vs_nui = ROOT.RooArgSet()
+vs_nui.add(v_nSignal)
+vs_nui.add(v_sin13)
+vs_nui.add(v_dm31)
 vs_poi_nui = ROOT.RooArgSet()
 vs_poi_nui.add(vs_poi)
 vs_poi_nui.add(vs_nui)
@@ -297,7 +300,7 @@ mcAlt.SetParametersOfInterest(vs_poi)
 mcAlt.SetNuisanceParameters(vs_nui)
 
 v_nSignal.setVal(nSignal)
-v_nSignal.setConstant(True)
+#v_nSignal.setConstant(True)
 v_sin14.setVal(sin14)
 v_dm41.setVal(dm41)
 v_sin14.setConstant(True)
@@ -412,14 +415,6 @@ if args.gui:
   grpNLL.Draw("ALP")
   cNLL.Update()
 
-#calc = ROOT.RooStats.AsymptoticCalculator(asimovData, mcAlt, mcNull)
-#calc = ROOT.RooStats.HybridCalculator(asimovData, mcNull, mcAlt)
-#calc.SetOneSided(True)
-
-#result = calc.GetHypoTest()
-#signif = result.Significance()
-#signif = calc.ExpectedSignificance(mcAlt.GetParametersOfInterest())
-
 if args.gui:
   cAS = ROOT.TCanvas("cAS", "cAS", 500, 500)
   frameAS = v_EReco.frame()
@@ -433,7 +428,7 @@ if args.gui:
   input("")
 
 fout = ROOT.TFile(foutName, 'recreate')
-grpNLL.SetName("grpNLL")
+grpNLL.SetName(f"grpNLL_dm41_{dm41:g}".replace('-', 'm').replace('.','p'))
 grpNLL.SetTitle("NLL scan for #Delta m^{2}_{41} = "+f"{dm41}"+";sin^{2}(2#theta_{14});-log(L)")
 grpNLL.Write()
 fout.Write()
