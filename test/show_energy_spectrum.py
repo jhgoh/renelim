@@ -194,8 +194,8 @@ v_sin14 = ws.var('v_sin14')
 v_dm31 = ws.var('v_dm31')
 v_dm41 = ws.var('v_dm41')
 
-v_sin13.setVal(config.get("physics.oscillation.sin13"))
-v_dm31.setVal(config.get("physics.oscillation.dm31"))
+v_sin13.setVal(config.get("physics.oscillation.sin13")[0])
+v_dm31.setVal(config.get("physics.oscillation.dm31")[0])
 v_sin13.setConstant(True)
 v_dm31.setConstant(True)
 
@@ -231,7 +231,7 @@ pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_NoOsc"),
                ROOT.RooFit.LineColor(ROOT.kBlue+2), ROOT.RooFit.LineWidth(2))
 legENu.AddEntry(frameENu.findObject("pdf_ENu_NoOsc"), "No Osc.")
 
-v_sin13.setVal(config.get("physics.oscillation.sin13"))
+v_sin13.setVal(config.get("physics.oscillation.sin13")[0])
 pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_noNu4"),
                ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
 legENu.AddEntry(frameENu.findObject("pdf_ENu_noNu4"), "with #nu_{3}")
@@ -305,7 +305,7 @@ pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_NoOsc"),
                ROOT.RooFit.LineColor(ROOT.kBlue+2), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_NoOsc"), "No Osc.")
 
-v_sin13.setVal(config.get("physics.oscillation.sin13"))
+v_sin13.setVal(config.get("physics.oscillation.sin13")[0])
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_noNu4"),
                ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_noNu4"), "with #nu_{3}")

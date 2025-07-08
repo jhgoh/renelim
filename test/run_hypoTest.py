@@ -10,6 +10,10 @@ parser.add_argument('-n', '--n_signal', type=float, required=True,
                     help='Number of expected signals')
 parser.add_argument('-o', '--output', type=str, required=True,
                     help='output ROOT file name to store HypoTestResult (result)')
+parser.add_argument('--dnll', type=float, default=4.605,
+                    help='Delta NLL threshold for adaptive NLL scan')
+parser.add_argument('--tol', type=float, default=1e-4,
+                    help='Tolerance factor for adaptive NLL scan')
 parser.add_argument('-g', '--gui', action='store_true',
                     help='Display results using ROOT TCanvas')
 args = parser.parse_args()
@@ -29,6 +33,11 @@ print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/10
 nSignal = args.n_signal
 dm41 = args.dm41
 foutName = args.output
+maxIterForDNLL = 20
+dnllPoints = [
+  1.00, 4.00, 9.00, 16.00, 25.00, # 1,2,3,4,5-sigmas for 1D scan
+  2.30, 6.18, 
+]
 
 sin14_toScan = [0.0]
 if args.sin14:
@@ -37,11 +46,11 @@ if args.sin14:
 else:
   sin14_toScan = np.concatenate([
                    np.zeros(1),
-                   #np.arange(1e-4, 1e-3, 5e-5),
+                   np.arange(1e-4, 1e-3, 1e-4), ## We are still interested to see NLL landscape near the null hypothesis
                    #np.arange(1e-3, 1e-2, 5e-4),
                    #np.arange(1e-2, 1e-1, 5e-3),
-                   #np.arange(1e-1, 1e-0, 1e-2),
-                   np.logspace(-4,1,10)*5
+                   np.arange(1e-1, 5e-1, 1e-1), ## Roughly scan over a wide range
+                   np.ones(1)*0.5,
                  ])
   print("@@@ sin14 values are not given. Perform scanning with default points (may take 1 hour):")
   print(sin14_toScan)
@@ -304,7 +313,8 @@ nll = model.createNLL(asimovData, ROOT.RooFit.Constrain(constrs))
 
 minimizer = ROOT.RooMinuit(nll)
 minimizer.setStrategy(2)
-minimizer.setPrintLevel(3)
+#minimizer.setPrintLevel(3)
+minimizer.setEps(1e-6)
 
 sin14_scanned = []
 nll_scanned = []
@@ -314,12 +324,13 @@ for _sin14 in tqdm(sin14_toScan):
 
     _status = minimizer.migrad()
     _nll = nll.getVal()
+
     if _status == -1:
       print(f"Fit failure ({_status}): sin14={_sin14}, nll={_nll}")
       continue
-    else:
-      sin14_scanned.append(_sin14)
-      nll_scanned.append(_nll)
+
+    sin14_scanned.append(_sin14)
+    nll_scanned.append(_nll)
 
 sin14_scanned = np.array(sin14_scanned)
 nll_scanned = np.array(nll_scanned)
@@ -329,17 +340,66 @@ if len(sin14_scanned) == 0:
   exit()
 
 ## Perform minimization to find a global minimum of this search
+def insertNLLVal(x, y, vx, vy):
+  if x in vx: return (vx, vy)
+
+  idx = np.searchsorted(vx, x, side='left')
+  vy = np.insert(vy, idx, y)
+  vx = np.insert(vx, idx, x)
+
+  return vx, vy
+
 _imin = np.argmin(nll_scanned)
 v_sin14.setVal(sin14_scanned[_imin])
 v_sin14.setConstant(False)
 minimizer.setStrategy(2)
 _status = minimizer.migrad()
-_sin14 = v_sin14.getVal()
-_nll = nll.getVal()
-if _sin14 not in sin14_scanned:
-  _iinsert = np.searchsorted(sin14_scanned, _sin14, side='left')
-  sin14_scanned = np.insert(sin14_scanned, _iinsert, _sin14)
-  nll_scanned = np.insert(nll_scanned, _iinsert, _nll)
+if _status != -1:
+  sin14_scanned, nll_scanned = insertNLLVal(v_sin14.getVal(), nll.getVal(),
+                                            sin14_scanned, nll_scanned)
+
+## Adaptive search for NLL near the target delta-NLL value
+dnll_target = args.dnll
+for i in range(maxIterForDNLL):
+  nll_min = np.min(nll_scanned)
+  dnll_scanned = nll_scanned - nll_min
+
+  ## Find the POI at the exclusion contour line
+  ## The first step is to find the point which exceeds the target delta-NLL
+  idxs_rhs = np.where(dnll_scanned >= dnll_target)[0]
+  if len(idxs_rhs) == 0:
+    print(f"!!! Warning: Failed to find point exceeding delta-NLL > {dnll_target}")
+    print(f"             No POI point of sensitivity contour")
+    break
+
+  idx_rhs = idxs_rhs[0]
+  if idx_rhs == 0:
+    print(f"!!! Warning: It should not happen, but the 1st point already exceed delta-NLL > {dnll_target}")
+    print(f"             Unphysical POI for scanning... sin14[0] = {sin14_scanned[0]}, NLL[0] = {nll_scanned[0]}")
+    break
+
+  ## Do the linear interpolation to approach desired POI at the target delta-NLL
+  _dnll_rhs, _dnll_lhs = dnll_scanned[idx_rhs], dnll_scanned[idx_rhs-1]
+  _dy0 = (_dnll_rhs - _dnll_lhs)
+  if _dy0 <= args.tol: break ## Alreay met the tolerance
+
+  _sin14_rhs, _sin14_lhs = sin14_scanned[idx_rhs], sin14_scanned[idx_rhs-1]
+  _dx0 = (_sin14_rhs - _sin14_lhs)
+  if _dx0 <= 10*np.finfo(float).eps: break ## Already the interval is small enough
+
+  _sin14 = (_dx0/_dy0)*(dnll_target - _dnll_lhs) + _sin14_lhs
+  _nll = dnll_target ## Set a dummy value. It will be used in case of failure in the fit.
+
+  v_sin14.setVal(_sin14)
+  v_sin14.setConstant(True)
+  minimizer.migrad()
+  if _status == -1:
+    print(f'!!! Warning: Fit failed with refined POI.')
+    print(f'    We just take the interpolated point, in belief that it gives desired NLL')
+  else:
+    _nll = nll.getVal()
+
+  sin14_scanned, nll_scanned = insertNLLVal(_sin14, _nll, sin14_scanned, nll_scanned)
 
 grpNLL = ROOT.TGraph(len(nll_scanned),
                      np.ascontiguousarray(sin14_scanned, dtype='float'),
