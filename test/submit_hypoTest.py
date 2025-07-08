@@ -33,7 +33,7 @@ for m, n in itertools.product(m_vals, n_vals):
   jobName = f'HypoTest_{suffix}'
   fName = f'results/result__{suffix}.root'
   cmd = ['sbatch', f'--job-name={jobName}',
-         f'--export=V_SIN14={s_str},V_DM41={m},V_NSIG={n},V_FNAME={fName}',
+         f'--export=V_SIN14="{s_str}",V_DM41={m},V_NSIG={n},V_FNAME={fName}',
          runScriptName]
 
   if os.path.exists(fName):
