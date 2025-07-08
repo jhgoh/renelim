@@ -40,5 +40,5 @@ for m, n in itertools.product(m_vals, n_vals):
     print(f"{fName} already exists. Skip this point...")
   else:
     print(' '.join(cmd))
-    #res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    res = subprocess.run(cmd, capture_output=True, text=True, check=True)
     
