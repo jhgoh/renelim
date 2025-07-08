@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
 
-parser = argparse.ArgumentParser(description='Run the hypothesis tests for sin14 and dm41')
+parser = argparse.ArgumentParser(description='Run the chi2 tests for sin14 and dm41')
 parser.add_argument('-s', '--sin14', type=str,
                     help='Oscillation parameter sin^2(2 theta_14)')
 parser.add_argument('-m', '--dm41', type=float, required=True,
@@ -9,7 +9,7 @@ parser.add_argument('-m', '--dm41', type=float, required=True,
 parser.add_argument('-n', '--n_signal', type=float, required=True,
                     help='Number of expected signals')
 parser.add_argument('-o', '--output', type=str, required=True,
-                    help='output ROOT file name to store HypoTestResult (result)')
+                    help='output ROOT file name to store results')
 parser.add_argument('--dnll', type=float, default=4.605,
                     help='Delta NLL threshold for adaptive NLL scan')
 parser.add_argument('--tol', type=float, default=1e-4,
