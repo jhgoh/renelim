@@ -342,6 +342,10 @@ if len(sin14_scanned) == 0:
   print("No successful fits")
   exit()
 
+_idxs = np.argsort(sin14_scanned)
+sin14_scanned = sin14_scanned[_idxs]
+nll_scanned = nll_scanned[_idxs]
+
 ## Perform minimization to find a global minimum of this search
 def insertNLLVal(x, y, vx, vy):
   if x in vx: return (vx, vy)

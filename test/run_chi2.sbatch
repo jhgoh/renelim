@@ -10,7 +10,7 @@ source /store/sw/anaconda3/etc/profile.d/conda.sh
 conda activate ds4hep
 
 echo "---------- Starting Hypothesis tests ----------"
-V_SIN14=$(echo "V_SIN14" | tr -d '"')
+V_SIN14=$(echo "$V_SIN14" | tr -d '"')
 python ./run_chi2.py -s ${V_SIN14} -m ${V_DM41} -n ${V_NSIG} -o ${V_FNAME}
 echo "-----------------------------------------------"
 
