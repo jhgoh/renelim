@@ -21,6 +21,7 @@ args = parser.parse_args()
 import sys
 import ROOT
 import numpy as np
+from array import array
 import resource
 from tqdm import tqdm
 
@@ -408,18 +409,47 @@ for i in range(maxIterForDNLL):
 
   sin14_scanned, nll_scanned = insertNLLVal(_sin14, _nll, sin14_scanned, nll_scanned)
 
-grpNLL = ROOT.TGraph(len(nll_scanned),
-                     np.ascontiguousarray(sin14_scanned, dtype='float'),
-                     np.ascontiguousarray(nll_scanned, dtype='float'))
-grpNLL.SetLineWidth(2)
-grpNLL.SetEditable(False)
+fout = ROOT.TFile(foutName, 'recreate')
+tree = ROOT.TTree("limit", "limit tree")
+
+ptr_nll = array('d', [0])
+ptr_minNll = array('d', [0])
+ptr_deltaNLL = array('d', [0])
+ptr_sin14 = array('d', [0])
+ptr_dm41 = array('d', [0])
+tree.Branch("nll", ptr_nll, "nll/D")
+tree.Branch("minNll", ptr_nll, "nll/D")
+tree.Branch("deltaNLL", ptr_nll, "nll/D")
+tree.Branch("sin14", ptr_sin14, "sin14/D")
+tree.Branch("dm41", ptr_dm41, "dm41/D")
+
+## Dummy variables for compatibility to the combine tool
+ptr_mh = array('d', [120.0])
+ptr_r = array('d', [1.0])
+ptr_quantileExpected = array('d', [-1])
+tree.Branch("mh", ptr_mh, "mh/D")
+tree.Branch('r', ptr_r, 'r/D')
+tree.Branch('quantileExpected', ptr_qe, 'quantileExpected/D')
+
+minNLL = nll_scanned.min()
+for i in range(len(sin14_scanned)):
+  ptr_nll[0] = nll_scanned[i]
+  ptr_minNLL[0] = minNLL
+  ptr_deltaNLL[0] = nll_scanned[i] - minNLL
+  ptr_sin14[0] = sin14_scanned[i]
+  ptr_dm41[0] = dm41
+  tree.Fill()
+tree.Write()
 
 if args.gui:
+  grpNLL = ROOT.TGraph(len(nll_scanned), array('d', sin14_scanned), array('d', nll_scanned))
+  grpNLL.SetLineWidth(2)
+  grpNLL.SetEditable(False)
+
   cNLL = ROOT.TCanvas("cNLL", "cNLL", 500, 500)
   grpNLL.Draw("ALP")
   cNLL.Update()
 
-if args.gui:
   cAS = ROOT.TCanvas("cAS", "cAS", 500, 500)
   frameAS = v_EReco.frame()
   asimovData.plotOn(frameAS, ROOT.RooFit.LineColor(ROOT.kBlack), ROOT.RooFit.MarkerSize(1), ROOT.RooFit.DataError(getattr(ROOT.RooAbsData, "None")))
@@ -431,12 +461,13 @@ if args.gui:
 
   input("")
 
-fout = ROOT.TFile(foutName, 'recreate')
-grpNLL.SetName(f"grpNLL_dm41_{dm41:g}".replace('-', 'm').replace('.','p'))
-grpNLL.SetTitle("NLL scan for #Delta m^{2}_{41} = "+f"{dm41}"+";sin^{2}(2#theta_{14});-log(L)")
-grpNLL.Write()
+  grpNLL.SetName(f"grpNLL_dm41_{dm41:g}".replace('-', 'm').replace('.','p'))
+  grpNLL.SetTitle("NLL scan for #Delta m^{2}_{41} = "+f"{dm41}"+";sin^{2}(2#theta_{14});-log(L)")
+  grpNLL.Write()
+
 fout.Write()
 fout.Close()
 
 print("@@@ Finishing...")
+print(f"@@@ Scanned for dm41={dm41}, sin14={arr_sin14}")
 print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
