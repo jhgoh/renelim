@@ -7,7 +7,7 @@ conda create -n ds4hep -c conda-forge
 conda activate ds4hep
 
 conda install root -c conda-forge -y
-conda install numpy -c conda-forge -y
+conda install numpy pandas tqdm pyyaml -c conda-forge -y
 #conda install matplotlib -c conda-forge -y
 ```
 
@@ -43,6 +43,24 @@ Fit functions has to be compiled using the (py)ROOT.
 ```bash
 python -i fit_spectral.py
 ```
+
+## Running the NLL scan
+After compiling the PDF, you can perform an adaptive negative log likelihood (NLL) scan to estimate the sensitivity.
+```bash
+python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root
+```
+The resulting ROOT files can be visualised with:
+```bash
+python test/show_chi2.py
+```
+This script draws the expected limits together with 3σ and 5σ contours.
+
+For a full grid scan on a batch system you can submit many jobs using
+```bash
+python test/submit_chi2.py
+```
+This script creates a `results` directory and dispatches `sbatch`
+jobs defined in `test/run_chi2.sbatch`.
 
 ## Reference of original data files
 Huber-Mueller flux
