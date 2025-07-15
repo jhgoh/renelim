@@ -10,8 +10,6 @@ parser.add_argument('-n', '--n_signal', type=float, required=True,
                     help='Number of expected signals')
 parser.add_argument('-o', '--output', type=str, required=True,
                     help='output ROOT file name to store results')
-parser.add_argument('--dnll', type=float, default=4.605,
-                    help='Delta NLL threshold for adaptive NLL scan')
 parser.add_argument('--tol', type=float, default=1e-4,
                     help='Tolerance factor for adaptive NLL scan')
 parser.add_argument('-g', '--gui', action='store_true',
@@ -37,7 +35,9 @@ foutName = args.output
 maxIterForDNLL = 20
 dnllPoints = [
   1.00, 4.00, 9.00, 16.00, 25.00, # 1,2,3,4,5-sigmas for 1D scan
-  2.30, 6.18, 
+  2.300, 6.180, 11.829, 18.421, 27.631, # 1,2,3,4,5-sigmas for 2D scan
+  2.706, 3.841, ## 90%,95% CL's for 1D scan
+  4.605, 5.991, ## 90%,95% CL's for 2D scan
 ]
 
 sin14_toScan = [0.0]
@@ -367,53 +367,48 @@ if _status != -1:
                                             sin14_scanned, nll_scanned)
 
 ## Adaptive search for NLL near the target delta-NLL value
-dnll_target = args.dnll
-for i in range(maxIterForDNLL):
-  nll_min = np.min(nll_scanned)
-  dnll_scanned = nll_scanned - nll_min
+minNLL = nll_scanned.min()
+for targetDNLL in tqdm(dnllPoints):
+  ## Find ranges to refine
+  targetNLL = minNLL + targetDNLL
+  isCrossing = (nll_scanned[:-1]-targetNLL) * (nll_scanned[1:]-targetNLL) < 0
+  idxsToRefine = np.where(isCrossing)[0]
 
-  ## Find the POI at the exclusion contour line
-  ## The first step is to find the point which exceeds the target delta-NLL
-  idxs_rhs = np.where(dnll_scanned >= dnll_target)[0]
-  if len(idxs_rhs) == 0:
-    print(f"!!! Warning: Failed to find point exceeding delta-NLL > {dnll_target}")
-    print(f"             No POI point of sensitivity contour")
-    break
+  if len(idxsToRefine) == 0:
+    print("!!! There is no point to refine NLL scan")
+    continue
 
-  idx_rhs = idxs_rhs[0]
-  if idx_rhs == 0:
-    print(f"!!! Warning: It should not happen, but the 1st point already exceed delta-NLL > {dnll_target}")
-    print(f"             Unphysical POI for scanning... sin14[0] = {sin14_scanned[0]}, NLL[0] = {nll_scanned[0]}")
-    break
+  for idxToRefine in idxsToRefine:
+    for i in range(maxIterForDNLL):
+      ## Do the linear interpolation to approach desired POI at the target delta-NLL
+      _nll_rhs, _nll_lhs = nll_scanned[idxToRefine+1], nll_scanned[idxToRefine]
+      _dy0 = _nll_rhs - _nll_lhs
+      if _dy0 <= args.tol: break ## Alreay met the tolerance
 
-  ## Do the linear interpolation to approach desired POI at the target delta-NLL
-  _dnll_rhs, _dnll_lhs = dnll_scanned[idx_rhs], dnll_scanned[idx_rhs-1]
-  _dy0 = (_dnll_rhs - _dnll_lhs)
-  if _dy0 <= args.tol: break ## Alreay met the tolerance
+      _sin14_rhs, _sin14_lhs = sin14_scanned[idxToRefine+1], sin14_scanned[idxToRefine]
+      _dx0 = (_sin14_rhs - _sin14_lhs)
 
-  _sin14_rhs, _sin14_lhs = sin14_scanned[idx_rhs], sin14_scanned[idx_rhs-1]
-  _dx0 = (_sin14_rhs - _sin14_lhs)
-  if _dx0 <= 10*np.finfo(float).eps: break ## Already the interval is small enough
+      if _dx0 <= 10*np.finfo(float).eps: break ## Already the interval is small enough
 
-  _sin14 = (_dx0/_dy0)*(dnll_target - _dnll_lhs) + _sin14_lhs
-  _nll = dnll_target ## Set a dummy value. It will be used in case of failure in the fit.
+      _sin14 = (_dx0/_dy0)*(targetNLL - _nll_lhs) + _sin14_lhs
+      _nll = targetNLL ## Set a dummy value. It will be used in case of failure in the fit.
 
-  v_sin14.setVal(_sin14)
-  v_sin14.setConstant(True)
-  minimizer.migrad()
-  if _status == -1:
-    print(f'!!! Warning: Fit failed with refined POI.')
-    print(f'    We just take the interpolated point, in belief that it gives desired NLL')
-  else:
-    _nll = nll.getVal()
+      v_sin14.setVal(_sin14)
+      v_sin14.setConstant(True)
+      minimizer.migrad()
+      if _status == -1:
+        print(f'!!! Warning: Fit failed with refined POI.')
+        print(f'    We just take the interpolated point, in belief that it gives desired NLL')
+      else:
+        _nll = nll.getVal()
 
-  sin14_scanned, nll_scanned = insertNLLVal(_sin14, _nll, sin14_scanned, nll_scanned)
+      sin14_scanned, nll_scanned = insertNLLVal(_sin14, _nll, sin14_scanned, nll_scanned)
 
 fout = ROOT.TFile(foutName, 'recreate')
 tree = ROOT.TTree("limit", "limit tree")
 
 ptr_nll = array('d', [0])
-ptr_minNll = array('d', [0])
+ptr_minNLL = array('d', [0])
 ptr_deltaNLL = array('d', [0])
 ptr_sin14 = array('d', [0])
 ptr_dm41 = array('d', [0])
@@ -429,7 +424,7 @@ ptr_r = array('d', [1.0])
 ptr_quantileExpected = array('d', [-1])
 tree.Branch("mh", ptr_mh, "mh/D")
 tree.Branch('r', ptr_r, 'r/D')
-tree.Branch('quantileExpected', ptr_qe, 'quantileExpected/D')
+tree.Branch('quantileExpected', ptr_quantileExpected, 'quantileExpected/D')
 
 minNLL = nll_scanned.min()
 for i in range(len(sin14_scanned)):
@@ -469,5 +464,5 @@ fout.Write()
 fout.Close()
 
 print("@@@ Finishing...")
-print(f"@@@ Scanned for dm41={dm41}, sin14={arr_sin14}")
+print(f"@@@ Scanned for dm41={dm41}, sin14={sin14_scanned}")
 print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
