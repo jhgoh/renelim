@@ -8,9 +8,26 @@ import pandas as pd
 
 import ROOT
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Run the chi2 tests for sin14 and dm41')
+parser.add_argument('-o', '--output', type=str, required=True, help='output ROOT file name to store results')
+args = parser.parse_args()
+
 chain = ROOT.TChain("limit")
-chain.Add("results/result_*_nSignal_1000.root")
+chain.Add(args.output)
+#chain.Add("results/result_*_nSignal_1000.root")
 #chain.Draw("nll:sin14", "", "COLZ")
+
+branches = [bn.GetName() for bn in chain.GetListOfBranches()]
+pars = {name: [] for name in branches}
+n_entries = chain.GetEntries()
+for i in range(n_entries):
+    chain.GetEntry(i)
+    for name in branches:
+        pars[name].append(getattr(chain, name))
+for name in pars:
+    pars[name] = np.array(pars[name])
 
 df = pd.DataFrame(pars)
 print(df)
