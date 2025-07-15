@@ -4,7 +4,7 @@ import itertools
 import subprocess
 import numpy as np
 
-runScriptName = 'run_chi2.sbatch'
+runScriptName = 'test/run_chi2.sbatch'
 
 n_vals = [1000]#, 2000, 5000,
 #          10000, 20000, 50000,
