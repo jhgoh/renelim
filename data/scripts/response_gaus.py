@@ -44,7 +44,7 @@ binEdges = np.linspace(xmin, xmax, nbins+1)
 binCenters = (binEdges[:-1]+binEdges[1:])/2
 
 def get_sigma(eTrue, a, b, c):
-  s2 = (a**2 * eTrue) + (b**2 * eTrue**2) + (c**2)
+  s2 = (a**2 * eTrue) + (c**2 * eTrue**2) + (b**2)
   return np.sqrt(s2)
 
 ## Build the response matrix
@@ -56,6 +56,8 @@ for j in range(nbins):
   probs = norm.cdf(binEdges[1:], loc=eTrue, scale=sigma) - \
           norm.cdf(binEdges[:-1], loc=eTrue, scale=sigma)
   respMatrix[:, j] = probs
+
+print(respMatrix)
 
 ## Normalize the matrix
 sums = np.sum(respMatrix, axis=0, keepdims=True)
