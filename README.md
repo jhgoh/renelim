@@ -39,15 +39,10 @@ python ./scripts/reno_neos_to_root.py
 cd ..
 ```
 
-Fit functions has to be compiled using the (py)ROOT.
-```bash
-python -i fit_spectral.py
-```
-
 ## Running the NLL scan
-After compiling the PDF, you can perform an adaptive negative log likelihood (NLL) scan to estimate the sensitivity.
+The script `test/run_chi2.py` automatically compiles the RooFit PDF and performs a negative log-likelihood (NLL) scan.  P-values are obtained using toy Monte Carlo samples.
 ```bash
-python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root
+python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
 ```
 The resulting ROOT files can be visualised with:
 ```bash
