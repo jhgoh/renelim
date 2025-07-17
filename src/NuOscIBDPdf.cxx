@@ -70,6 +70,19 @@ NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf& other, const char* name):
 {
 }
 
+int NuOscIBDPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const
+{
+  if ( matchArgs(allVars, analVars, x_) ) return 1;
+  return 0;
+}
+
+double NuOscIBDPdf::analyticalIntegral(int code, const char* rangeName) const
+{
+  R__ASSERT(code == 1);
+
+  return 1.0;
+}
+
 void NuOscIBDPdf::loadFromTGraph(const TGraph* grp, std::vector<double>& xx, std::vector<double>& yy)
 {
   if ( !grp ) {

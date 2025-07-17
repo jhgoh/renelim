@@ -47,6 +47,8 @@ protected:
   bool hasU238_;
   
   double evaluate() const;
+  int getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName = 0) const override;
+  double analyticalIntegral(int code, const char* rangeName = 0) const override;
 
   void loadFromTGraph(const TGraph* grp, std::vector<double>& xx, std::vector<double>& yy);
   double interpolate(const double x, const std::vector<double>& xx, const std::vector<double>& yy) const;
