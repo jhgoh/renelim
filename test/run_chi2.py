@@ -12,6 +12,8 @@ parser.add_argument('-o', '--output', type=str, required=True,
                     help='output ROOT file name to store results')
 parser.add_argument('--tol', type=float, default=1e-4,
                     help='Tolerance factor for adaptive NLL scan')
+parser.add_argument('--toys', type=int, default=1000,
+                    help='Number of ToyMC samples')
 parser.add_argument('-g', '--gui', action='store_true',
                     help='Display results using ROOT TCanvas')
 args = parser.parse_args()
@@ -32,13 +34,6 @@ print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/10
 nSignal = args.n_signal
 dm41 = args.dm41
 foutName = args.output
-maxIterForDNLL = 20
-dnllPoints = [
-  1.00, 4.00, 9.00, 16.00, 25.00, # 1,2,3,4,5-sigmas for 1D scan
-  2.300, 6.180, 11.829, 18.421, 27.631, # 1,2,3,4,5-sigmas for 2D scan
-  2.706, 3.841, ## 90%,95% CL's for 1D scan
-  4.605, 5.991, ## 90%,95% CL's for 2D scan
-]
 
 sin14_toScan = [0.0]
 if args.sin14:
@@ -113,8 +108,8 @@ baseline = baselines[reactorIdx]
 ## Important parameters of interests
 ## Define these variables in advance, to avoid possible buggy behaviours
 ###############################################################################
-v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(#theta_{13})", 0, 1)
-v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 1)
+v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(#theta_{13})", 0, 0.5)
+v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 0.5)
 v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{31}", 0, 1, unit="eV^{2}")
 v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{41}", 0, 5, unit="eV^{2}")
 ## Note: mind the ordering
@@ -247,10 +242,12 @@ pdf_EReco = ws.pdf('pdf_EReco')
 ## Reduce precision of integrator for speed up
 #epsAbs = v_ENu.getIntegratorConfig().epsAbs()
 #epsRel = v_ENu.getIntegratorConfig().epsRel()
-#v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
-#v_ENu.getIntegratorConfig().setEpsRel(epsRel)
+#v_ENu.getIntegratorConfig().setEpsAbs(1e-2)
+#v_ENu.getIntegratorConfig().setEpsRel(1e-2)
 #v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
 #v_ENu.getIntegratorConfig().setEpsRel(5e-7)
+#v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
+#v_ENu.getIntegratorConfig().setEpsRel(epsRel)
 
 ################################################################################
 ## Start setting up RooStats
@@ -259,7 +256,7 @@ v_ENu.setConstant(True)
 
 ws.factory('v_nSignal[0, 1e9]')
 v_nSignal = ws.var('v_nSignal')
-_model = ROOT.RooExtendPdf("model", "Signal-only PDF", pdf_EReco, v_nSignal) 
+_model = ROOT.RooExtendPdf("model", "Signal-only PDF", pdf_EReco, v_nSignal)
 ws.Import(_model)
 model = ws.pdf('model')
 
@@ -287,7 +284,7 @@ v_dm41.setVal(0.0)
 v_sin14.setConstant(True)
 v_dm41.setConstant(True)
 
-mcNull.SetSnapshot(vs_poi_nui)
+mcNull.SetSnapshot(vs_poi)
 
 ## Create Asimov dataset
 #asimovData = mcNull.GetPdf().generateBinned(mcNull.GetObservables(), ROOT.RooFit.Extended(), ROOT.RooFit.Asimov())
@@ -307,10 +304,7 @@ v_dm41.setVal(dm41)
 v_sin14.setConstant(True)
 v_dm41.setConstant(True)
 
-mcAlt.SetSnapshot(vs_poi_nui)
-
-#msg = ROOT.RooMsgService.instance()
-#msg.setGlobalKillBelow(ROOT.RooFit.DEBUG)
+mcAlt.SetSnapshot(vs_poi)
 
 ## Calculate the likelihood
 nll = model.createNLL(asimovData, ROOT.RooFit.Constrain(constrs)) 
@@ -348,91 +342,74 @@ sin14_scanned = sin14_scanned[_idxs]
 nll_scanned = nll_scanned[_idxs]
 
 ## Perform minimization to find a global minimum of this search
-def insertNLLVal(x, y, vx, vy):
-  if x in vx: return (vx, vy)
-
-  idx = np.searchsorted(vx, x, side='left')
-  vy = np.insert(vy, idx, y)
-  vx = np.insert(vx, idx, x)
-
-  return vx, vy
-
 _imin = np.argmin(nll_scanned)
 v_sin14.setVal(sin14_scanned[_imin])
 v_sin14.setConstant(False)
 minimizer.setStrategy(2)
 _status = minimizer.migrad()
-if _status != -1:
-  sin14_scanned, nll_scanned = insertNLLVal(v_sin14.getVal(), nll.getVal(),
-                                            sin14_scanned, nll_scanned)
+_sin14 = v_sin14.getVal()
+if _status != -1 and _sin14 not in sin14_scanned:
+  _idx = np.searchsorted(sin14_scanned, _sin14, side='left')
+  sin14_scanned = np.insert(sin14_scanned, _idx, _sin14)
+  nll_scanned = np.insert(nll_scanned, _idx, nll.getVal())
 
-## Adaptive search for NLL near the target delta-NLL value
-minNLL = nll_scanned.min()
-for targetDNLL in tqdm(dnllPoints):
-  ## Find ranges to refine
-  targetNLL = minNLL + targetDNLL
-  isCrossing = (nll_scanned[:-1]-targetNLL) * (nll_scanned[1:]-targetNLL) < 0
-  idxsToRefine = np.where(isCrossing)[0]
+## Proceed to the Feldman-Cousins tests
+#pl = ROOT.RooStats.ProfileLikelihoodTestStat(mcNull.GetPdf())
+#pl.SetOneSided(True)
 
-  if len(idxsToRefine) == 0:
-    print("!!! There is no point to refine NLL scan")
-    continue
+t90_scanned = np.zeros(len(sin14_scanned))
+pNull_scanned = np.zeros(len(sin14_scanned))
+pAlt_scanned = np.zeros(len(sin14_scanned))
+for i, _sin14 in tqdm(enumerate(sin14_scanned)):
+  v_sin14.setVal(_sin14)
+  v_sin14.setConstant(True)
+  mcAlt.SetSnapshot(vs_poi)
 
-  for idxToRefine in idxsToRefine:
-    for i in range(maxIterForDNLL):
-      ## Do the linear interpolation to approach desired POI at the target delta-NLL
-      _nll_rhs, _nll_lhs = nll_scanned[idxToRefine+1], nll_scanned[idxToRefine]
-      _dy0 = _nll_rhs - _nll_lhs
-      if _dy0 <= args.tol: break ## Alreay met the tolerance
+  t90 = 0
+  #limitFC = ROOT.RooStats.FeldmanCousins(asimovData, mcNull)
+  #limitFC.SetTestSize(0.1)
+  #limitFC.SetTestStatistic(pl)
+  #limitFC.SetNuisanceParameters(vs_nui)
+  #limitFC.SetNBins(20)
+  #limitFC.UseAdaptiveSampling(True)
+  #limitFC.FluctuateNumDataEntries(False)
+  #interval = limitFC.GetInterval()
+  #upper_limit = interval.UpperLimit(vs_poi)
 
-      _sin14_rhs, _sin14_lhs = sin14_scanned[idxToRefine+1], sin14_scanned[idxToRefine]
-      _dx0 = (_sin14_rhs - _sin14_lhs)
+  ## Create test statistic and calculators
+  calcFreq = ROOT.RooStats.FrequentistCalculator(asimovData, mcNull, mcAlt)
+  calcFreq.SetToys(args.toys, args.toys)
+  resFreq = calcFreq.GetHypoTest()
 
-      if _dx0 <= 10*np.finfo(float).eps: break ## Already the interval is small enough
-
-      _sin14 = (_dx0/_dy0)*(targetNLL - _nll_lhs) + _sin14_lhs
-      _nll = targetNLL ## Set a dummy value. It will be used in case of failure in the fit.
-
-      v_sin14.setVal(_sin14)
-      v_sin14.setConstant(True)
-      minimizer.migrad()
-      if _status == -1:
-        print(f'!!! Warning: Fit failed with refined POI.')
-        print(f'    We just take the interpolated point, in belief that it gives desired NLL')
-      else:
-        _nll = nll.getVal()
-
-      sin14_scanned, nll_scanned = insertNLLVal(_sin14, _nll, sin14_scanned, nll_scanned)
+  t90_scanned[i] = t90
+  pNull_scanned[i] = resFreq.NullPValue()
+  pAlt_scanned[i] = resFreq.AlternatePValue()
 
 fout = ROOT.TFile(foutName, 'recreate')
 tree = ROOT.TTree("limit", "limit tree")
 
-ptr_nll = array('d', [0])
-ptr_minNLL = array('d', [0])
-ptr_deltaNLL = array('d', [0])
-ptr_sin14 = array('d', [0])
 ptr_dm41 = array('d', [0])
-tree.Branch("nll", ptr_nll, "nll/D")
-tree.Branch("minNll", ptr_nll, "nll/D")
-tree.Branch("deltaNLL", ptr_nll, "nll/D")
-tree.Branch("sin14", ptr_sin14, "sin14/D")
+ptr_sin14 = array('d', [0])
+ptr_nll = array('d', [0])
+ptr_t90 = array('d', [0])
+ptr_pNull = array('d', [0])
+ptr_pAlt = array('d', [0])
+
 tree.Branch("dm41", ptr_dm41, "dm41/D")
+tree.Branch("sin14", ptr_sin14, "sin14/D")
+tree.Branch("nll", ptr_nll, "nll/D")
+tree.Branch("t90", ptr_t90, "t90/D")
+tree.Branch("pNull", ptr_pNull, "pNull/D")
+tree.Branch("pAlt", ptr_pAlt, "pAlt/D")
 
-## Dummy variables for compatibility to the combine tool
-ptr_mh = array('d', [120.0])
-ptr_r = array('d', [1.0])
-ptr_quantileExpected = array('d', [-1])
-tree.Branch("mh", ptr_mh, "mh/D")
-tree.Branch('r', ptr_r, 'r/D')
-tree.Branch('quantileExpected', ptr_quantileExpected, 'quantileExpected/D')
-
-minNLL = nll_scanned.min()
 for i in range(len(sin14_scanned)):
-  ptr_nll[0] = nll_scanned[i]
-  ptr_minNLL[0] = minNLL
-  ptr_deltaNLL[0] = nll_scanned[i] - minNLL
-  ptr_sin14[0] = sin14_scanned[i]
   ptr_dm41[0] = dm41
+  ptr_sin14[0] = sin14_scanned[i]
+  ptr_nll[0] = nll_scanned[i]
+  ptr_t90[0] = t90_scanned[i]
+  ptr_pNull[0] = pNull_scanned[i]
+  ptr_pAlt[0] = pAlt_scanned[i]
+
   tree.Fill()
 tree.Write()
 

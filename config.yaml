@@ -31,6 +31,8 @@ detectors:
     n_protons: 2.1e28 ## To be updated
     #response: "data/response_ibd_gaus.root:hResp_ENu_vs_Ereco" ## response matrix TH2D, (x=E_nu, y=E_reco)
     response: "data/response_gaus.root:hResp_ETrue_vs_EReco" ## response matrix TH2D, (x=E_nu, y=E_reco)
+    #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/IDEAL2.root:h_resonse_5" ## RENE IDEAL geometry
+    #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/RECENT2.root:h_resonse_5" ## RENE IDEAL geometry
 
 ## Reactor configuration
 ## Locations are found from Nucler Engineering and Technology 49 (2017) 813-819
