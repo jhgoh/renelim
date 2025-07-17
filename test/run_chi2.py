@@ -232,7 +232,8 @@ _pdf_RespT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
                              ROOT.RooArgList(v_EReco, v_ENu), _dhRespT)
 
 _pdf_Joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
-                             ROOT.RooArgList(pdf_ENu, _pdf_RespT))
+                             ROOT.RooArgList(pdf_ENu, _pdf_RespT),
+                             ROOT.RooFit.Conditional(ROOT.RooArgSet(_pdf_RespT), ROOT.RooArgSet(v_EReco)))
 pdf_EReco = _pdf_Joint.createProjection(ROOT.RooArgSet(v_ENu))
 pdf_EReco.SetName("pdf_EReco")
 pdf_EReco.SetTitle("PDF of reconstructed energy")
