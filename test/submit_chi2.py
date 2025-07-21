@@ -30,8 +30,9 @@ for i, (m, n) in enumerate(itertools.product(m_vals, n_vals)):
   suffix = f'iter_{i}__dm41_{m}__nSignal_{n}'.replace('.', 'p')
   jobName = f'Chi2_{suffix}'
   fName = f'results/result__{suffix}.root'
+  seed = i*1000
   cmd = ['sbatch', f'--job-name={jobName}',
-         f'--export=V_SIN14="{s_str}",V_DM41={m},V_NSIG={n},V_FNAME={fName},V_NTOYS={nToys}',
+         f'--export=V_SIN14="{s_str}",V_DM41={m},V_NSIG={n},V_FNAME={fName},V_NTOYS={nToys},V_SEED={seed}',
          runScriptName]
 
   if os.path.exists(fName):

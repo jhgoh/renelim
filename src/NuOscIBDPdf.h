@@ -2,6 +2,7 @@
 #define NuOscIBDPdf_H
 
 #include "RooAbsPdf.h"
+#include "RooArgList.h"
 #include "RooRealProxy.h"
 #include "RooCategoryProxy.h"
 #include "RooAbsReal.h"
@@ -16,16 +17,7 @@ public:
       RooAbsReal& l, // baseline L (meter)
       RooAbsReal& sin13, RooAbsReal& dm31, // sin^2(2theta_13), Delta m_13^2
       RooAbsReal& sim14, RooAbsReal& dm41, // sin^2(2theta_14), Delta m_14^2
-      RooAbsReal& fU235, RooAbsReal& fPu239, RooAbsReal& fPu241, // Fuel composition (no U238)
-      const TGraph* grpU235, const TGraph* grpPu239, const TGraph* grpPu241, // Spectrum (Huber-Mueller)
-      const TGraph* grpXsec // IBD Cross-section curve
-  );
-  NuOscIBDPdf(const char *name, const char *title, RooAbsReal& x,
-      RooAbsReal& l, // baseline L (meter)
-      RooAbsReal& sin13, RooAbsReal& dm31, // sin^2(2theta_13), Delta m_13^2
-      RooAbsReal& sim14, RooAbsReal& dm41, // sin^2(2theta_14), Delta m_14^2
-      RooAbsReal& fU235, RooAbsReal& fU238, RooAbsReal& fPu239, RooAbsReal& fPu241, // Fuel composition
-      const TGraph* grpU235, const TGraph* grpU238, const TGraph* grpPu239, const TGraph* grpPu241, // Spectrum (Huber-Mueller)
+      const RooArgList& elemFracs, const std::vector<const TGraph*> elemSpects, // Fuel composition and spectrum
       const TGraph* grpXsec // IBD Cross-section curve
   );
   NuOscIBDPdf(const NuOscIBDPdf& other, const char* name=0);
@@ -35,20 +27,14 @@ public:
 protected:
   RooRealProxy x_; // Variable
   RooRealProxy l_, sin13_, dm31_, sin14_, dm41_; // Parameters
-  RooRealProxy fU235_, fU238_, fPu239_, fPu241_;
+  RooArgList elemFracs_;
 
-  std::vector<double> xx_U235_, yy_U235_;
-  std::vector<double> xx_U238_, yy_U238_;
-  std::vector<double> xx_Pu239_, yy_Pu239_;
-  std::vector<double> xx_Pu241_, yy_Pu241_;
+  std::vector<std::vector<double> > elemSpectsX_;
+  std::vector<std::vector<double> > elemSpectsY_;
 
-  std::vector<double> xx_Xsec_, yy_Xsec_;
+  std::vector<double> ibdXsecX_, ibdXsecY_;
 
-  bool hasU238_;
-  
   double evaluate() const;
-  int getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName = 0) const override;
-  double analyticalIntegral(int code, const char* rangeName = 0) const override;
 
   void loadFromTGraph(const TGraph* grp, std::vector<double>& xx, std::vector<double>& yy);
   double interpolate(const double x, const std::vector<double>& xx, const std::vector<double>& yy) const;

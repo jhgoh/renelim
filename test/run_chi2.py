@@ -6,14 +6,14 @@ parser.add_argument('-s', '--sin14', type=str,
                     help='Oscillation parameter sin^2(2 theta_14)')
 parser.add_argument('-m', '--dm41', type=float, required=True,
                     help='Oscillation parameter Delta m^2_14')
-parser.add_argument('-n', '--n_signal', type=float, required=True,
+parser.add_argument('-n', '--nsignal', type=float, required=True,
                     help='Number of expected signals')
 parser.add_argument('-o', '--output', type=str, required=True,
                     help='output ROOT file name to store results')
-parser.add_argument('--tol', type=float, default=1e-4,
-                    help='Tolerance factor for adaptive NLL scan')
 parser.add_argument('--toys', type=int, default=1000,
                     help='Number of ToyMC samples')
+parser.add_argument('--seed', type=int, default=0,
+                    help='Random number seed')
 parser.add_argument('-g', '--gui', action='store_true',
                     help='Display results using ROOT TCanvas')
 args = parser.parse_args()
@@ -31,9 +31,10 @@ print("@@@ MAXRSS now = ", resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/10
 ###############################################################################
 ## Set constants
 ###############################################################################
-nSignal = args.n_signal
+nSignal = args.nsignal
 dm41 = args.dm41
 foutName = args.output
+ROOT.RooRandom.randomGenerator().SetSeed(args.seed)
 
 sin14_toScan = [0.0]
 if args.sin14:
@@ -74,6 +75,7 @@ reaPoses = np.array(reaPoses)
 
 #print(config.get('detectors'))
 detNames = config.getDetectors('name')
+detPoses = np.array(config.getDetectors('position'))
 detEffs = config.getDetectors('efficiency')
 responses = config.getDetectors('response')
 allBaselines = []
@@ -130,38 +132,38 @@ v_dm41 = ws.var('v_dm41')
 ## the fuel composition is a subject to be changed in time.
 ## We choose the 6th core only (1st one in the configuration)
 elemNames = config.getReactors('elements')[reactorIdx]['name']
-v_elemFracs = config.getReactors('elements')[reactorIdx]['fraction']
+_elemFracs = config.getReactors('elements')[reactorIdx]['fraction']
 formula = "1"
 formulaVars = []
 for i in range(len(elemNames)-1):
     elemName = elemNames[i]
-    elemFrac = v_elemFracs[i]
-    ws.factory(f'v_{elemName}[{elemFrac}, 0, 1]')
-    v_elemFracs[i] = ws.var(f'v_{elemName}')
-    v_elemFracs[i].setConstant(True)
+    ws.factory(f'v_{elemName}[{_elemFracs[i]}, 0, 1]')
+    ws.var(f'v_{elemName}').setConstant(True)
     formula += f"-@{i}"
     formulaVars.append(f'v_{elemName}')
 formulaVars = ','.join(formulaVars)
 ws.factory(f'EXPR::v_{elemNames[-1]}("{formula}", {{ {formulaVars} }})')
 del(formula)
 del(formulaVars)
+
+v_elemFracs = ROOT.RooArgList()
 for i in range(len(elemNames)-1):
-  v_elemFracs[i] = ws.var(f'v_{elemNames[i]}')
-v_elemFracs[-1] = ws.function(f'v_{elemNames[-1]}')
+  v_elemFracs.add(ws.var(f'v_{elemNames[i]}'))
+v_elemFracs.add(ws.function(f'v_{elemNames[-1]}'))
 
 ## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
-_grps_HM = []
+grps_HM = ROOT.std.vector('TGraph')()
 for elemName in elemNames:
     _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{elemName}'))
     ROOT.gROOT.cd()
-    _grps_HM.append(grp.Clone())
+    grps_HM.push_back(grp.Clone())
     del(grp)
 ################################################################################
 
 ###############################################################################
 ## IBD cross section
 ###############################################################################
-_fXsec, _grp_Xsec = getFileAndObj(config.get('physics.ibd_xsec'))
+_, grp_Xsec = getFileAndObj(config.get('physics.ibd_xsec'))
 ROOT.gROOT.cd()
 ################################################################################
 
@@ -172,11 +174,6 @@ v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", minENu, maxENu, unit="MeV")
 v_ENu.setBins(nbinsENu)
 ws.Import(v_ENu)
 v_ENu = ws.var('v_ENu')
-
-v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", minEReco, maxEReco, unit="MeV")
-v_EReco.setBins(nbinsEReco)
-ws.Import(v_EReco)
-v_EReco = ws.var('v_EReco')
 
 _sin13, _sin13err = config.get("physics.oscillation.sin13")
 _dm31, _dm31err = config.get("physics.oscillation.dm31")
@@ -208,9 +205,8 @@ v_L.setConstant(True)
 
 pdf_ENu = ROOT.NuOscIBDPdf("pdf_ENu", "pdf_ENu", v_ENu, v_L,
                            v_sin13, v_dm31, v_sin14, v_dm41,
-                           v_elemFracs[0], v_elemFracs[1], v_elemFracs[2], v_elemFracs[3],
-                           _grps_HM[0], _grps_HM[1], _grps_HM[2], _grps_HM[3],
-                           _grp_Xsec)
+                           v_elemFracs, grps_HM, 
+                           grp_Xsec)
 ws.Import(pdf_ENu)
 pdf_ENu = ws.pdf('pdf_ENu')
 ################################################################################
@@ -220,6 +216,11 @@ pdf_ENu = ws.pdf('pdf_ENu')
 ## to do the convolution with conditional variable, the response matrix 
 ## has to be transposed.
 ################################################################################
+v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", minEReco, maxEReco, unit="MeV")
+v_EReco.setBins(nbinsEReco)
+ws.Import(v_EReco)
+v_EReco = ws.var('v_EReco')
+
 _hRespT = ROOT.TH2D("hRespT", _hResp.GetTitle(),
                     _hResp.GetNbinsY(), _hResp.GetYaxis().GetXmin(), _hResp.GetYaxis().GetXmax(),
                     _hResp.GetNbinsX(), _hResp.GetXaxis().GetXmin(), _hResp.GetXaxis().GetXmax())
@@ -241,12 +242,12 @@ ws.Import(pdf_EReco)
 pdf_EReco = ws.pdf('pdf_EReco')
 
 ## Reduce precision of integrator for speed up
-#epsAbs = v_ENu.getIntegratorConfig().epsAbs()
-#epsRel = v_ENu.getIntegratorConfig().epsRel()
+epsAbs = v_ENu.getIntegratorConfig().epsAbs()
+epsRel = v_ENu.getIntegratorConfig().epsRel()
 #v_ENu.getIntegratorConfig().setEpsAbs(1e-2)
 #v_ENu.getIntegratorConfig().setEpsRel(1e-2)
-#v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
-#v_ENu.getIntegratorConfig().setEpsRel(5e-7)
+v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
+v_ENu.getIntegratorConfig().setEpsRel(5e-7)
 #v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
 #v_ENu.getIntegratorConfig().setEpsRel(epsRel)
 
@@ -380,6 +381,7 @@ for i, _sin14 in tqdm(enumerate(sin14_scanned)):
   ## Create test statistic and calculators
   calcFreq = ROOT.RooStats.FrequentistCalculator(asimovData, mcNull, mcAlt)
   calcFreq.SetToys(args.toys, args.toys)
+  sampler = calcFreq.GetTestStatSampler()
   resFreq = calcFreq.GetHypoTest()
 
   t90_scanned[i] = t90
