@@ -33,6 +33,7 @@ detectors:
     response: "data/response_gaus.root:hResp_ETrue_vs_EReco" ## response matrix TH2D, (x=E_nu, y=E_reco)
     #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/IDEAL2.root:h_resonse_5" ## RENE IDEAL geometry
     #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/RECENT2.root:h_resonse_5" ## RENE IDEAL geometry
+    #response: [0.05, 0.003, 1.0] ## Parameterized [a,b,c]: sigma^2 = a^2 * sqrt(E) + b^2 * E + c^2
 
 ## Reactor configuration
 ## Locations are found from Nucler Engineering and Technology 49 (2017) 813-819

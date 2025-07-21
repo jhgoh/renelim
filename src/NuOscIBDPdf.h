@@ -21,8 +21,8 @@ public:
       const TGraph* grpXsec // IBD Cross-section curve
   );
   NuOscIBDPdf(const NuOscIBDPdf& other, const char* name=0);
-  virtual TObject* clone(const char* newname) const { return new NuOscIBDPdf(*this,newname); }
-  inline virtual ~NuOscIBDPdf() = default; 
+  virtual TObject* clone(const char* newname) const override { return new NuOscIBDPdf(*this,newname); }
+  inline virtual ~NuOscIBDPdf() override = default; 
 
 protected:
   RooRealProxy x_; // Variable
@@ -34,7 +34,9 @@ protected:
 
   std::vector<double> ibdXsecX_, ibdXsecY_;
 
-  double evaluate() const;
+  double evaluate() const override;
+  int getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* rangeName = 0) const override;
+  double analyticalIntegral(int code, const char* rangeName = 0) const override;
 
   void loadFromTGraph(const TGraph* grp, std::vector<double>& xx, std::vector<double>& yy);
   double interpolate(const double x, const std::vector<double>& xx, const std::vector<double>& yy) const;

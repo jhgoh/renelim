@@ -8,6 +8,7 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 #ROOT.gROOT.ProcessLineSync(".x src/PiecewiseLinearPdf.cxx+")
 ROOT.gROOT.ProcessLineSync(".x src/NuOscIBDPdf.cxx+")
+ROOT.gROOT.ProcessLineSync(".x src/SmearedNuOscIBDPdf.cxx+")
 
 ws = ROOT.RooWorkspace("ws", "ws")
 
@@ -77,16 +78,27 @@ detName = detNames[0] ## Maybe not used
 defEff = detEffs[0] ## Maybe not used
 baselines = allBaselines[0]
 
-_fResp, _hResp = getFileAndObj(responses[0])
-ROOT.gROOT.cd()
+_fResp, _hResp = None, None
+if isinstance(responses[0], str):
+  _fResp, _hResp = getFileAndObj(responses[0])
+  ROOT.gROOT.cd()
 
-nbinsENu = _hResp.GetNbinsX()
-minENu = _hResp.GetXaxis().GetXmin()
-maxENu = _hResp.GetXaxis().GetXmax()
+  nbinsENu = _hResp.GetNbinsX()
+  minENu = _hResp.GetXaxis().GetXmin()
+  maxENu = _hResp.GetXaxis().GetXmax()
 
-nbinsEReco = _hResp.GetNbinsY()
-minEReco = _hResp.GetYaxis().GetXmin()
-maxEReco = _hResp.GetYaxis().GetXmax()
+  nbinsEReco = _hResp.GetNbinsY()
+  minEReco = _hResp.GetYaxis().GetXmin()
+  maxEReco = _hResp.GetYaxis().GetXmax()
+
+elif isinstance(responses[0], list):
+  respA, respB, respC = responses[0]
+  nbinsENu, minENu, maxENu = 100, 0, 10 ## FIXME: Default range. maybe we can set via config, if needed
+  nbinsEReco, minEReco, maxEReco = 100, 0, 10 ## FIXME: Default range. maybe we can set via config, if needed
+
+else:
+  print('!!! detectors[].response has to be string or list')
+  exit()
 
 reactorIdx = np.argmin(baselines)
 baseline = baselines[reactorIdx]
@@ -283,32 +295,32 @@ v_EReco.setBins(nbinsEReco)
 ws.Import(v_EReco)
 v_EReco = ws.var('v_EReco')
 
-_hRespT = ROOT.TH2D("hRespT", _hResp.GetTitle(),
-                    _hResp.GetNbinsY(), _hResp.GetYaxis().GetXmin(), _hResp.GetYaxis().GetXmax(),
-                    _hResp.GetNbinsX(), _hResp.GetXaxis().GetXmin(), _hResp.GetXaxis().GetXmax())
-for i in range(_hResp.GetNbinsX()):
-  for j in range(_hResp.GetNbinsY()):
-    _hRespT.SetBinContent(j+1, i+1, _hResp.GetBinContent(i+1, j+1))
-_dhRespT = ROOT.RooDataHist("dhRespT", _hRespT.GetTitle(),
-                            ROOT.RooArgList(v_EReco, v_ENu), _hRespT)
-_pdf_RespT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
-                             ROOT.RooArgList(v_EReco, v_ENu), _dhRespT)
-
-_pdf_Joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
-                             ROOT.RooArgList(pdf_ENu, _pdf_RespT))
-pdf_EReco = _pdf_Joint.createProjection(ROOT.RooArgSet(v_ENu))
-pdf_EReco.SetName("pdf_EReco")
-pdf_EReco.SetTitle("PDF of reconstructed energy")
-ws.Import(pdf_EReco)
+if _hResp != None:
+  ## Method1: response matrix
+  pdf_EReco = ROOT.SmearedNuOscIBDPdf("pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
+                                      v_sin13, v_dm31, v_sin14, v_dm41,
+                                      v_elemFracs, grps_HM, grp_Xsec, _hResp)
+  ws.Import(pdf_EReco)
+else:
+  ## Method2: parametrized response function
+  v_a2 = ROOT.RooRealVar("v_a2", "v_a2", respA**2) ## Stochastic term
+  v_b2 = ROOT.RooRealVar("v_b2", "v_b2", respB**2) ## Non-linear term
+  v_c2 = ROOT.RooRealVar("v_c2", "v_c2", respC**2) ## Constant term
+  vs_respPar = ROOT.RooArgList(v_a2, v_b2, v_c2)
+  pdf_EReco = ROOT.SmearedNuOscIBDPdf("pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
+                                      v_sin13, v_dm31, v_sin14, v_dm41,
+                                      v_elemFracs, grps_HM, grp_Xsec,
+                                      vs_respPar)
+  ws.Import(pdf_EReco)
 pdf_EReco = ws.pdf('pdf_EReco')
 
 ## Reduce precision of integrator for speed up
-epsAbs = v_ENu.getIntegratorConfig().epsAbs()
-epsRel = v_ENu.getIntegratorConfig().epsRel()
-#v_ENu.getIntegratorConfig().setEpsAbs(1e-2)
-#v_ENu.getIntegratorConfig().setEpsRel(1e-2)
-v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
-v_ENu.getIntegratorConfig().setEpsRel(5e-7)
+#epsAbs = v_ENu.getIntegratorConfig().epsAbs()
+#epsRel = v_ENu.getIntegratorConfig().epsRel()
+#v_ENu.getIntegratorConfig().setEpsAbs(1e-3)
+#v_ENu.getIntegratorConfig().setEpsRel(1e-3)
+#v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
+#v_ENu.getIntegratorConfig().setEpsRel(5e-7)
 #v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
 #v_ENu.getIntegratorConfig().setEpsRel(epsRel)
 
@@ -323,7 +335,7 @@ frameEReco = v_EReco.frame()
 v_sin13.setVal(0.0)
 v_sin14.setVal(0.0)
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_NoOsc"),
-               ROOT.RooFit.LineColor(ROOT.kBlue+2), ROOT.RooFit.LineWidth(2))
+                 ROOT.RooFit.LineColor(ROOT.kBlue+2), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_NoOsc"), "No Osc.")
 
 v_sin13.setVal(config.get("physics.oscillation.sin13")[0])

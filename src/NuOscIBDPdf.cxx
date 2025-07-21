@@ -76,6 +76,19 @@ double NuOscIBDPdf::interpolate(const double x, const std::vector<double>& xx, c
   return y1 + (y2-y1)/(x2-x1)*(x-x1);
 }
 
+int NuOscIBDPdf::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const
+{
+  if ( matchArgs(allVars, analVars, x_) ) return 1;
+  return 0;
+}
+
+double NuOscIBDPdf::analyticalIntegral(int code, const char* rangeName) const
+{
+  R__ASSERT(code == 1);
+
+  return 1.0;
+}
+
 double NuOscIBDPdf::evaluate() const 
 { 
   const double x = x_->getVal();
