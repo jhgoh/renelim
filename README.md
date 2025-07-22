@@ -39,6 +39,11 @@ python ./scripts/reno_neos_to_root.py
 cd ..
 ```
 
+## Configuration
+The behaviour of RENELim is controlled via `config.yaml`. Detector
+positions, reactor properties and response matrices can be adjusted by
+editing this file to match your setup.
+
 ## Running the NLL scan
 The script `test/run_chi2.py` automatically compiles the RooFit PDF and performs a negative log-likelihood (NLL) scan.  P-values are obtained using toy Monte Carlo samples.
 ```bash
@@ -56,6 +61,14 @@ python test/submit_chi2.py
 ```
 This script creates a `results` directory and dispatches `sbatch`
 jobs defined in `test/run_chi2.sbatch`.
+
+## Visualising the energy spectrum
+To inspect the detector smearing and flux models interactively run:
+```bash
+python test/show_energy_spectrum.py
+```
+The script compiles the necessary ROOT classes on the fly and opens
+several canvases displaying the spectrum. Press `Enter` to close them.
 
 ## Reference of original data files
 Huber-Mueller flux
