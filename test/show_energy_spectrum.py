@@ -7,7 +7,7 @@ import numpy as np
 from array import array
 
 sys.path.append('python')
-from model import load_model
+from ModelConfig import load_model
 
 model = load_model('config.yaml')
 ws = model['ws']

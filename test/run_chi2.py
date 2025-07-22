@@ -59,7 +59,7 @@ sin14 = sin14_toScan[-1] ## Set a dummy value
 ###############################################################################
 
 sys.path.append('python')
-from model import load_model
+from ModelConfig import load_model
 
 model = load_model('config.yaml')
 ws = model['ws']
