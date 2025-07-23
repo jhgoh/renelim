@@ -126,10 +126,10 @@ def load_model(config_path='config.yaml', det_idx=0):
     ws.Import(v_ENu)
     v_ENu = ws.var('v_ENu')
 
-    s13, _ = config.get("physics.oscillation.sin13")
-    dm31, _ = config.get("physics.oscillation.dm31")
-    v_sin13.setVal(s13)
-    v_dm31.setVal(dm31)
+    _sin13, _sin13err = config.get("physics.oscillation.sin13")
+    _dm31, _dm31err = config.get("physics.oscillation.dm31")
+    v_sin13.setVal(_sin13)
+    v_dm31.setVal(_dm31)
 
     v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter")
     v_L.setVal(baseline)
@@ -188,9 +188,7 @@ def load_model(config_path='config.yaml', det_idx=0):
     return {
         'ws': ws,
         'config': config,
-        'v_sin13': v_sin13,
         'v_sin14': v_sin14,
-        'v_dm31': v_dm31,
         'v_dm41': v_dm41,
         'v_ENu': v_ENu,
         'v_EReco': v_EReco,

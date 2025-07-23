@@ -12,9 +12,9 @@ from ModelConfig import load_model
 model = load_model('config.yaml')
 ws = model['ws']
 config = model['config']
-v_sin13 = model['v_sin13']
+v_sin13 = ws.var('v_sin13')
 v_sin14 = model['v_sin14']
-v_dm31 = model['v_dm31']
+v_dm31 = ws.var('v_dm31')
 v_dm41 = model['v_dm41']
 v_ENu = model['v_ENu']
 v_EReco = model['v_EReco']
