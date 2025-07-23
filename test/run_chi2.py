@@ -68,15 +68,26 @@ v_sin13 = model['v_sin13']
 v_sin14 = model['v_sin14']
 v_dm31 = model['v_dm31']
 v_dm41 = model['v_dm41']
-v_L = model['v_L']
 v_ENu = model['v_ENu']
 v_EReco = model['v_EReco']
 pdf_ENu = model['pdf_ENu']
 pdf_EReco = model['pdf_EReco']
-constrs = model['constrs']
 
 v_sin14.setVal(sin14)
 v_dm41.setVal(dm41)
+
+# Build Gaussian constraints for sin13 and dm31
+s13, s13err = config.get("physics.oscillation.sin13")
+dm31, dm31err = config.get("physics.oscillation.dm31")
+c_s13_m = ROOT.RooConstVar("v_constr_sin13_m", "sin13_mean", s13)
+c_s13_s = ROOT.RooConstVar("v_constr_sin13_s", "sin13_sigma", s13err)
+c_dm31_m = ROOT.RooConstVar("v_constr_dm31_m", "dm31_mean", dm31)
+c_dm31_s = ROOT.RooConstVar("v_constr_dm31_s", "dm31_sigma", dm31err)
+v_constr_sin13 = ROOT.RooGaussian("v_constr_sin13", "Constraint on sin13",
+                                  v_sin13, c_s13_m, c_s13_s)
+v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31",
+                                 v_dm31, c_dm31_m, c_dm31_s)
+constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
 
 # Save default integrator precision so we can restore it later if needed
 epsAbs_default = v_ENu.getIntegratorConfig().epsAbs()

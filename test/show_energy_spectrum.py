@@ -16,12 +16,10 @@ v_sin13 = model['v_sin13']
 v_sin14 = model['v_sin14']
 v_dm31 = model['v_dm31']
 v_dm41 = model['v_dm41']
-v_L = model['v_L']
 v_ENu = model['v_ENu']
 v_EReco = model['v_EReco']
 pdf_ENu = model['pdf_ENu']
 pdf_EReco = model['pdf_EReco']
-constrs = model['constrs']
 
 #print(config.get('reactors'))
 #print(config.getReactors('name'))

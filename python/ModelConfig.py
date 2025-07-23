@@ -126,23 +126,10 @@ def load_model(config_path='config.yaml', det_idx=0):
     ws.Import(v_ENu)
     v_ENu = ws.var('v_ENu')
 
-    s13, s13err = config.get("physics.oscillation.sin13")
-    dm31, dm31err = config.get("physics.oscillation.dm31")
+    s13, _ = config.get("physics.oscillation.sin13")
+    dm31, _ = config.get("physics.oscillation.dm31")
     v_sin13.setVal(s13)
     v_dm31.setVal(dm31)
-    c_s13_m = ROOT.RooConstVar("v_constr_sin13_m", "sin13_mean", s13)
-    c_s13_s = ROOT.RooConstVar("v_constr_sin13_s", "sin13_sigma", s13err)
-    c_dm31_m = ROOT.RooConstVar("v_constr_dm31_m", "dm31_mean", dm31)
-    c_dm31_s = ROOT.RooConstVar("v_constr_dm31_s", "dm31_sigma", dm31err)
-    v_constr_sin13 = ROOT.RooGaussian("v_constr_sin13", "Constraint on sin13",
-                                      v_sin13, c_s13_m, c_s13_s)
-    v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31",
-                                     v_dm31, c_dm31_m, c_dm31_s)
-    ws.Import(v_constr_sin13)
-    ws.Import(v_constr_dm31)
-    v_constr_sin13 = ws.pdf('v_constr_sin13')
-    v_constr_dm31 = ws.pdf('v_constr_dm31')
-    constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
 
     v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter")
     v_L.setVal(baseline)
@@ -205,10 +192,8 @@ def load_model(config_path='config.yaml', det_idx=0):
         'v_sin14': v_sin14,
         'v_dm31': v_dm31,
         'v_dm41': v_dm41,
-        'v_L': v_L,
         'v_ENu': v_ENu,
         'v_EReco': v_EReco,
         'pdf_ENu': pdf_ENu,
         'pdf_EReco': pdf_EReco,
-        'constrs': constrs,
     }
