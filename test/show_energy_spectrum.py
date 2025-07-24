@@ -8,6 +8,7 @@ from array import array
 
 sys.path.append('python')
 from ModelConfig import load_model
+from Config import *
 
 model = load_model('config.yaml')
 ws = model['ws']
@@ -164,6 +165,50 @@ cIBDXsec.Update()
 ################################################################################
 
 ################################################################################
+## Draw oscillated neutrino energy distribution without detector response
+################################################################################
+cENu = ROOT.TCanvas("cENu", "cENu", 500, 500)
+legENu = ROOT.TLegend(0.55, 0.6, 0.85, 0.85)
+legENu.SetBorderSize(0)
+legENu.SetFillStyle(0)
+frameENu = v_ENu.frame()
+
+v_sin13.setVal(0.0)
+v_sin14.setVal(0.0)
+pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_NoOsc"),
+               ROOT.RooFit.LineColor(ROOT.kBlue+2), ROOT.RooFit.LineWidth(2))
+legENu.AddEntry(frameENu.findObject("pdf_ENu_NoOsc"), "No Osc.")
+
+v_sin13.setVal(config.get("physics.oscillation.sin13")[0])
+pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_noNu4"),
+               ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
+legENu.AddEntry(frameENu.findObject("pdf_ENu_noNu4"), "with #nu_{3}")
+
+v_sin14.setVal(0.5)
+v_dm41.setVal(1.0)
+pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_A"),
+               ROOT.RooFit.LineColor(ROOT.kGreen+3), ROOT.RooFit.LineWidth(2))
+legENu.AddEntry(frameENu.findObject("pdf_ENu_A"),
+                "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
+
+v_sin14.setVal(0.5)
+v_dm41.setVal(2.0)
+pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_B"),
+               ROOT.RooFit.LineColor(ROOT.kOrange+5), ROOT.RooFit.LineWidth(2))
+legENu.AddEntry(frameENu.findObject("pdf_ENu_B"),
+                "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
+
+v_sin14.setVal(0.5)
+v_dm41.setVal(5.0)
+pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_C"),
+               ROOT.RooFit.LineColor(ROOT.kViolet+1), ROOT.RooFit.LineWidth(2))
+legENu.AddEntry(frameENu.findObject("pdf_ENu_C"),
+                "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
+
+frameENu.Draw()
+legENu.Draw()
+
+cENu.Update()
 
 ## Reduce precision of integrator for speed up
 #epsAbs = v_ENu.getIntegratorConfig().epsAbs()
@@ -174,9 +219,11 @@ cIBDXsec.Update()
 #v_ENu.getIntegratorConfig().setEpsRel(5e-7)
 #v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
 #v_ENu.getIntegratorConfig().setEpsRel(epsRel)
-
 ################################################################################
 
+################################################################################
+## Draw neutrino energy distribution with detector response
+################################################################################
 cEReco = ROOT.TCanvas("cEReco", "cEReco", 500, 500)
 legEReco = ROOT.TLegend(0.55, 0.6, 0.85, 0.85)
 legEReco.SetBorderSize(0)
@@ -219,8 +266,6 @@ frameEReco.Draw()
 legEReco.Draw()
 
 cEReco.Update()
-
-
 ################################################################################
 
 input("Press Enter to exit...")
