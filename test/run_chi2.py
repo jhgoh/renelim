@@ -20,6 +20,9 @@ args = parser.parse_args()
 
 import sys
 import ROOT
+if args.gui:
+    ROOT.gStyle.SetOptStat(0)
+    ROOT.gStyle.SetOptTitle(0)
 import numpy as np
 from array import array
 import resource
@@ -55,201 +58,45 @@ else:
 sin14 = sin14_toScan[-1] ## Set a dummy value
 ###############################################################################
 
-ROOT.gStyle.SetOptStat(0)
-ROOT.gStyle.SetOptTitle(0)
-#ROOT.gROOT.ProcessLineSync(".x src/PiecewiseLinearPdf.cxx+")
-ROOT.gROOT.ProcessLineSync(".x src/NuOscIBDPdf.cxx+")
-
-ws = ROOT.RooWorkspace("ws", "ws")
-
 sys.path.append('python')
-from Config import *
-config = ConfigRENE('config.yaml')
+from ModelConfig import load_model
 
-#print(config.get('reactors'))
-#print(config.getReactors('name'))
-reaPoses = config.getReactors('position')
-reaPoses = np.array(reaPoses)
-#print(config.getReactors('elements'))
-#print(config.getReactors('power'))
-
-#print(config.get('detectors'))
-detNames = config.getDetectors('name')
-detPoses = np.array(config.getDetectors('position'))
-detEffs = config.getDetectors('efficiency')
-responses = config.getDetectors('response')
-allBaselines = []
-for detName in detNames:
-  allBaselines.append(config.getBaselines(detName))
-
-###############################################################################
-## Detector informations
-## We take only one detector for this version.
-## We also guess range of neutrino energy distribution from the response matrix
-###############################################################################
-detName = detNames[0] ## Maybe not used
-defEff = detEffs[0] ## Maybe not used
-baselines = allBaselines[0]
-
-_fResp, _hResp = getFileAndObj(responses[0])
-ROOT.gROOT.cd()
-
-nbinsENu = _hResp.GetNbinsX()
-minENu = _hResp.GetXaxis().GetXmin()
-maxENu = _hResp.GetXaxis().GetXmax()
-
-nbinsEReco = _hResp.GetNbinsY()
-minEReco = _hResp.GetYaxis().GetXmin()
-maxEReco = _hResp.GetYaxis().GetXmax()
-
-reactorIdx = np.argmin(baselines)
-baseline = baselines[reactorIdx]
-###############################################################################
-
-###############################################################################
-## Important parameters of interests
-## Define these variables in advance, to avoid possible buggy behaviours
-###############################################################################
-v_sin13 = ROOT.RooRealVar("v_sin13", "sin^{2}(#theta_{13})", 0, 0.5)
-v_sin14 = ROOT.RooRealVar("v_sin14", "sin^{2}(#theta_{14})", 0, 0.5)
-v_dm31 = ROOT.RooRealVar("v_dm31", "#Delta^{2}_{31}", 0, 1, unit="eV^{2}")
-v_dm41 = ROOT.RooRealVar("v_dm41", "#Delta^{2}_{41}", 0, 5, unit="eV^{2}")
-## Note: mind the ordering
-ws.Import(v_sin14)
-ws.Import(v_dm41)
-ws.Import(v_sin13)
-ws.Import(v_dm31)
+model = load_model('config.yaml')
+ws = model['ws']
+config = model['config']
 v_sin13 = ws.var('v_sin13')
-v_sin14 = ws.var('v_sin14')
+v_sin14 = model['v_sin14']
 v_dm31 = ws.var('v_dm31')
-v_dm41 = ws.var('v_dm41')
-###############################################################################
-
-###############################################################################
-## Neutrino energy spectrums
-###############################################################################
-## (Maybe later) Consider the burn-up effect, 
-## the fuel composition is a subject to be changed in time.
-## We choose the 6th core only (1st one in the configuration)
-elemNames = config.getReactors('elements')[reactorIdx]['name']
-_elemFracs = config.getReactors('elements')[reactorIdx]['fraction']
-formula = "1"
-formulaVars = []
-for i in range(len(elemNames)-1):
-    elemName = elemNames[i]
-    ws.factory(f'v_{elemName}[{_elemFracs[i]}, 0, 1]')
-    ws.var(f'v_{elemName}').setConstant(True)
-    formula += f"-@{i}"
-    formulaVars.append(f'v_{elemName}')
-formulaVars = ','.join(formulaVars)
-ws.factory(f'EXPR::v_{elemNames[-1]}("{formula}", {{ {formulaVars} }})')
-del(formula)
-del(formulaVars)
-
-v_elemFracs = ROOT.RooArgList()
-for i in range(len(elemNames)-1):
-  v_elemFracs.add(ws.var(f'v_{elemNames[i]}'))
-v_elemFracs.add(ws.function(f'v_{elemNames[-1]}'))
-
-## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
-grps_HM = ROOT.std.vector('TGraph')()
-for elemName in elemNames:
-    _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{elemName}'))
-    ROOT.gROOT.cd()
-    grps_HM.push_back(grp.Clone())
-    del(grp)
-################################################################################
-
-###############################################################################
-## IBD cross section
-###############################################################################
-_, grp_Xsec = getFileAndObj(config.get('physics.ibd_xsec'))
-ROOT.gROOT.cd()
-################################################################################
-
-################################################################################
-## Build the Oscillated neutrino energy spectrum
-################################################################################
-v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", minENu, maxENu, unit="MeV")
-v_ENu.setBins(nbinsENu)
-ws.Import(v_ENu)
-v_ENu = ws.var('v_ENu')
-
-_sin13, _sin13err = config.get("physics.oscillation.sin13")
-_dm31, _dm31err = config.get("physics.oscillation.dm31")
-v_sin13.setVal(_sin13)
-v_dm31.setVal(_dm31)
-#v_sin13.setConstant(True)
-#v_dm31.setConstant(True)
-_v_constr_sin13_m = ROOT.RooConstVar("v_constr_sin13_m", "sin13_mean", _sin13)
-_v_constr_sin13_s = ROOT.RooConstVar("v_constr_sin13_s", "sin13_sigma", _sin13err)
-_v_constr_dm31_m = ROOT.RooConstVar("v_constr_dm31_m", "dm31_mean", _dm31)
-_v_constr_dm31_s = ROOT.RooConstVar("v_constr_dm31_s", "dm31_sigma", _dm31err)
-v_constr_sin13 = ROOT.RooGaussian("v_constr_sin13", "Constraint on sin13", v_sin13, _v_constr_sin13_m, _v_constr_sin13_s)
-v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31", v_dm31, _v_constr_dm31_m, _v_constr_dm31_s)
-ws.Import(v_constr_sin13)
-ws.Import(v_constr_dm31)
-v_constr_sin13 = ws.pdf('v_constr_sin13')
-v_constr_dm31 = ws.pdf('v_constr_dm31')
-
-constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
+v_dm41 = model['v_dm41']
+v_ENu = model['v_ENu']
+v_EReco = model['v_EReco']
+pdf_ENu = model['pdf_ENu']
+pdf_EReco = model['pdf_EReco']
 
 v_sin14.setVal(sin14)
 v_dm41.setVal(dm41)
 
-v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter") ## up to 10km for now.
-v_L.setVal(baseline)
-ws.Import(v_L)
-v_L = ws.var('v_L')
-v_L.setConstant(True)
+# Build Gaussian constraints for sin13 and dm31
+s13, s13err = config.get("physics.oscillation.sin13")
+dm31, dm31err = config.get("physics.oscillation.dm31")
+c_s13_m = ROOT.RooConstVar("v_constr_sin13_m", "sin13_mean", s13)
+c_s13_s = ROOT.RooConstVar("v_constr_sin13_s", "sin13_sigma", s13err)
+c_dm31_m = ROOT.RooConstVar("v_constr_dm31_m", "dm31_mean", dm31)
+c_dm31_s = ROOT.RooConstVar("v_constr_dm31_s", "dm31_sigma", dm31err)
+v_constr_sin13 = ROOT.RooGaussian("v_constr_sin13", "Constraint on sin13",
+                                  v_sin13, c_s13_m, c_s13_s)
+v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31",
+                                 v_dm31, c_dm31_m, c_dm31_s)
+constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
 
-pdf_ENu = ROOT.NuOscIBDPdf("pdf_ENu", "pdf_ENu", v_ENu, v_L,
-                           v_sin13, v_dm31, v_sin14, v_dm41,
-                           v_elemFracs, grps_HM, 
-                           grp_Xsec)
-ws.Import(pdf_ENu)
-pdf_ENu = ws.pdf('pdf_ENu')
-################################################################################
-
-################################################################################
-## Build the convoluted PDF
-## to do the convolution with conditional variable, the response matrix 
-## has to be transposed.
-################################################################################
-v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", minEReco, maxEReco, unit="MeV")
-v_EReco.setBins(nbinsEReco)
-ws.Import(v_EReco)
-v_EReco = ws.var('v_EReco')
-
-_hRespT = ROOT.TH2D("hRespT", _hResp.GetTitle(),
-                    _hResp.GetNbinsY(), _hResp.GetYaxis().GetXmin(), _hResp.GetYaxis().GetXmax(),
-                    _hResp.GetNbinsX(), _hResp.GetXaxis().GetXmin(), _hResp.GetXaxis().GetXmax())
-for i in range(_hResp.GetNbinsX()):
-  for j in range(_hResp.GetNbinsY()):
-    _hRespT.SetBinContent(j+1, i+1, _hResp.GetBinContent(i+1, j+1))
-_dhRespT = ROOT.RooDataHist("dhRespT", _hRespT.GetTitle(),
-                            ROOT.RooArgList(v_EReco, v_ENu), _hRespT)
-_pdf_RespT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
-                             ROOT.RooArgList(v_EReco, v_ENu), _dhRespT)
-
-_pdf_Joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
-                             ROOT.RooArgList(pdf_ENu, _pdf_RespT),
-                             ROOT.RooFit.Conditional(ROOT.RooArgSet(_pdf_RespT), ROOT.RooArgSet(v_EReco)))
-pdf_EReco = _pdf_Joint.createProjection(ROOT.RooArgSet(v_ENu))
-pdf_EReco.SetName("pdf_EReco")
-pdf_EReco.SetTitle("PDF of reconstructed energy")
-ws.Import(pdf_EReco)
-pdf_EReco = ws.pdf('pdf_EReco')
-
-## Reduce precision of integrator for speed up
-epsAbs = v_ENu.getIntegratorConfig().epsAbs()
-epsRel = v_ENu.getIntegratorConfig().epsRel()
-#v_ENu.getIntegratorConfig().setEpsAbs(1e-2)
-#v_ENu.getIntegratorConfig().setEpsRel(1e-2)
+# Save default integrator precision so we can restore it later if needed
+epsAbs_default = v_ENu.getIntegratorConfig().epsAbs()
+epsRel_default = v_ENu.getIntegratorConfig().epsRel()
 v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
 v_ENu.getIntegratorConfig().setEpsRel(5e-7)
-#v_ENu.getIntegratorConfig().setEpsAbs(epsAbs)
-#v_ENu.getIntegratorConfig().setEpsRel(epsRel)
+# To restore the original values:
+# v_ENu.getIntegratorConfig().setEpsAbs(epsAbs_default)
+# v_ENu.getIntegratorConfig().setEpsRel(epsRel_default)
 
 ################################################################################
 ## Start setting up RooStats
