@@ -238,27 +238,27 @@ legEReco.AddEntry(frameEReco.findObject("pdf_EReco_NoOsc"), "No Osc.")
 
 v_sin13.setVal(config.get("physics.oscillation.sin13")[0])
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_noNu4"),
-               ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
+                 ROOT.RooFit.LineColor(ROOT.kRed+1), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_noNu4"), "with #nu_{3}")
 
 v_sin14.setVal(0.5)
 v_dm41.setVal(1.0)
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_A"),
-               ROOT.RooFit.LineColor(ROOT.kGreen+3), ROOT.RooFit.LineWidth(2))
+                 ROOT.RooFit.LineColor(ROOT.kGreen+3), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_A"),
                 "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
 
 v_sin14.setVal(0.5)
 v_dm41.setVal(2.0)
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_B"),
-               ROOT.RooFit.LineColor(ROOT.kOrange+5), ROOT.RooFit.LineWidth(2))
+                 ROOT.RooFit.LineColor(ROOT.kOrange+5), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_B"),
                 "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
 
 v_sin14.setVal(0.5)
 v_dm41.setVal(5.0)
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_C"),
-               ROOT.RooFit.LineColor(ROOT.kViolet+1), ROOT.RooFit.LineWidth(2))
+                 ROOT.RooFit.LineColor(ROOT.kViolet+1), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_C"),
                 "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
 
