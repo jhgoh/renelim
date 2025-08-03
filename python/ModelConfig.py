@@ -121,7 +121,8 @@ def load_model(config_path='config.yaml', det_idx=0):
     ## Build the Oscillated neutrino energy spectrum
     ################################################################################
     v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", min_enu, max_enu, unit="MeV")
-    v_ENu.setBins(nbins_enu)
+    #v_ENu.setBins(nbins_enu)
+    v_ENu.setBins(1024)
     ws.Import(v_ENu)
     v_ENu = ws.var('v_ENu')
 
@@ -149,7 +150,8 @@ def load_model(config_path='config.yaml', det_idx=0):
     ## has to be transposed.
     ################################################################################
     v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", min_ereco, max_ereco, unit="MeV")
-    v_EReco.setBins(nbins_ereco)
+    #v_EReco.setBins(nbins_ereco)
+    v_EReco.setBins(1024)
     ws.Import(v_EReco)
     v_EReco = ws.var('v_EReco')
 
