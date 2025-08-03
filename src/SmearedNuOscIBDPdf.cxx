@@ -51,6 +51,7 @@ SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const char *name, const char *title,
       const double val = hResp->GetBinContent(ix, iy);
       sumE += val;
     }
+    if ( sumE == 0 ) continue;
     for (int iy=1; iy<=hResp->GetNbinsY(); ++iy) { // Ereco axis
       const double val = hResp->GetBinContent(ix, iy);
       respMat_(iy-1, ix-1) = val/sumE; // NOTE: different indexing
@@ -174,47 +175,55 @@ double SmearedNuOscIBDPdf::evaluate() const
 
   const double k31 = 1.27*dm31*l;
   const double k41 = 1.27*dm41*l;
-
-  std::vector<double> int31s, int41s;
-  for ( int j=0; j<binsT_.size(); ++j ) {
+  std::vector<double> int31As, int31Bs, int31Cs;
+  std::vector<double> int41As, int41Bs, int41Cs;
+  for ( int j=0, n=binsT_.size(); j<n; ++j ) {
     const double e0 = binsT_[j];
+
+    // Disappearance term for nu_3
+    const double kk31e0 = 2*k31/e0;
+    const double si31e0 = ROOT::Math::sinint(kk31e0);
+    const double ci31e0 = ROOT::Math::cosint(kk31e0);
+    const double sin31e0 = std::sin(kk31e0), cos31e0 = std::cos(kk31e0);
+
+    const double int31A0 = 2*k31*k31*k31*si31e0 + (k31*k31*e0 - e0*e0*e0/2)*cos31e0  + e0*e0*e0/2 + k31/2*e0*e0*sin31e0;
+    const double int31B0 = -2*k31*k31*ci31e0 + k31*e0*sin31e0 - e0*e0/2*cos31e0 + e0*e0/2;
+    const double int31C0 = -k31*si31e0 + e0/2*(1-cos31e0);
+
+    // Disappearance term for nu_4
+    const double kk41e0 = 2*k41/e0;
+    const double si41e0 = ROOT::Math::sinint(kk41e0);
+    const double ci41e0 = ROOT::Math::cosint(kk41e0);
+    const double sin41e0 = std::sin(kk41e0), cos41e0 = std::cos(kk41e0);
+
+    const double int41A0 = 2*k41*k41*k41*si41e0 + (k41*k41*e0 - e0*e0*e0/2)*cos41e0  + e0*e0*e0/2 + k41/2*e0*e0*sin41e0;
+    const double int41B0 = -2*k41*k41*ci41e0 + k41*e0*sin41e0 - e0*e0/2*cos41e0 + e0*e0/2;
+    const double int41C0 = -k41*si41e0 + e0/2*(1-cos41e0);
+
+    // Keep each terms
+    int31As.push_back(e0 <= 0 ? 0 : int31A0);
+    int31Bs.push_back(e0 <= 0 ? 0 : int31B0);
+    int31Cs.push_back(e0 <= 0 ? 0 : int31C0);
+
+    int41As.push_back(e0 <= 0 ? 0 : int41A0);
+    int41Bs.push_back(e0 <= 0 ? 0 : int41B0);
+    int41Cs.push_back(e0 <= 0 ? 0 : int41C0);
+  }
+
+  double pOsc31 = 0, pOsc41 = 0;
+  for (int j=0, nn=binsT_.size()-1; j<nn; ++j) {
+    const double dE = binsT_[j+1]-binsT_[j];
     const double a3 = a3Mat_(idx, j);
     const double b2 = b2Mat_(idx, j);
     const double c1 = c1Mat_(idx, j);
 
-    // Disappearance term for nu_3
-    const double kk31e0 = 2*k31/e0;
-    const double si31e0 = -ROOT::Math::sinint(kk31e0);
-    const double ci31e0 = ROOT::Math::cosint(kk31e0);
-
-    const double int31A0 = e0*e0/2*( e0/2*(kk31e0*kk31e0-2)*cos(kk31e0) + k31*sin(kk31e0) + e0 ) + 2*k31*k31*k31*si31e0;
-    const double int31B0 = k31*e0*sin(kk31e0) - e0*e0/2*cos(kk31e0) + e0*e0/2 - k31*k31*ci31e0;
-    const double int31C0 = e0*TMath::Sq(sin(k31/e0)) - k31*si31e0;
-
-    // Disappearance term for nu_4
-    const double kk41e0 = 2*k41/e0;
-    const double si41e0 = -ROOT::Math::sinint(kk41e0);
-    const double ci41e0 = ROOT::Math::cosint(kk41e0);
-
-    const double int41A0 = e0*e0/2*( e0/2*(kk41e0*kk41e0-2)*cos(kk41e0) + k41*sin(kk41e0) + e0 ) + 2*k41*k41*k41*si41e0;
-    const double int41B0 = k41*e0*sin(kk41e0) - e0*e0/2*cos(kk41e0) + e0*e0/2 - k41*k41*ci41e0;
-    const double int41C0 = e0*TMath::Sq(sin(k41/e0)) - k41*si41e0;
-
-    // Keep each terms
-    const double int31 = e0 <= 0 ? 0 : a3*int31A0 + b2*int31B0 + c1*int31C0;
-    const double int41 = e0 <= 0 ? 0 : a3*int41A0 + b2*int41B0 + c1*int41C0;
-    
-    int31s.push_back(int31);
-    int41s.push_back(int41);
-  }
-
-  double pOsc31 = 0, pOsc41 = 0;
-  for ( int j=0; j<binsT_.size()-1; ++j ) {
-    const double dE = binsT_[j+1] - binsT_[j];
-    pOsc31 += respMat_(idx, j) * std::max(0., (int31s[j+1]-int31s[j]))/dE*1e-6;
-    pOsc41 += respMat_(idx, j) * std::max(0., (int41s[j+1]-int41s[j]))/dE*1e-6;
+    const double int31 = a3*(int31As[j+1]-int31As[j]) + b2*(int31Bs[j+1]-int31Bs[j]) + c1*(int31Cs[j+1]-int31Cs[j]);
+    const double int41 = a3*(int41As[j+1]-int41As[j]) + b2*(int41Bs[j+1]-int41Bs[j]) + c1*(int41Cs[j+1]-int41Cs[j]);
+    pOsc31 += respMat_(idx, j) * int31/dE;
+    pOsc41 += respMat_(idx, j) * int41/dE;
   }
 
   return std::max(0.0, pEnvs_[idx] - sin13*pOsc31 - sin14*pOsc41);
+  //return std::abs(pEnvs_[idx] - sin13*pOsc31 - sin14*pOsc41);
 }
 
