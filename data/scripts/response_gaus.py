@@ -7,11 +7,11 @@ import os
 
 parser = argparse.ArgumentParser(description="Generate a gaussian detector response matrix")
 parser.add_argument('--a', type=float, default=0.06,
-                    help='Parameter "a" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2')
+                    help='Parameter "a" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2)')
 parser.add_argument('--b', type=float, default=0.01,
-                    help='Parameter "b" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2')
+                    help='Parameter "b" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2)')
 parser.add_argument('--c', type=float, default=0.0005,
-                    help='Parameter "c" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2')
+                    help='Parameter "c" for energy resolution: sigma=sqrt(a^2*E + b^2*E^2 + c^2)')
 parser.add_argument('--xmin', type=float, default=0.0,
                     help='Minimum energy for both true and reconstructed energy (MeV)')
 parser.add_argument('--xmax', type=float, default=10.0,
