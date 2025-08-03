@@ -45,6 +45,7 @@ for detName in detNames:
 ###############################################################################
 detName = detNames[0] ## Maybe not used
 defEff = detEffs[0] ## Maybe not used
+response = responses[0]
 baselines = allBaselines[0]
 reactorIdx = int(np.argmin(baselines))
 baseline = baselines[reactorIdx]
@@ -82,45 +83,25 @@ cLayout.Update()
 ###############################################################################
 
 ###############################################################################
-## Detector informations
-## We take only one detector for this version.
-## We also guess range of neutrino energy distribution from the response matrix
+## Detector response
+###############################################################################
+if isinstance(response, str):
+  f_resp, h_resp = getFileAndObj(response)
+  cResp = ROOT.TCanvas("cResp", "cResp", 500, 500)
+  h_resp.Draw("COLZ")
+  cResp.Update()
 ###############################################################################
 
 ###############################################################################
 ## Neutrino energy spectrums
 ###############################################################################
-## (Maybe later) Consider the burn-up effect, 
-## the fuel composition is a subject to be changed in time.
-## We choose the 6th core only (1st one in the configuration)
 elemNames = config.getReactors('elements')[reactorIdx]['name']
-_elemFracs = config.getReactors('elements')[reactorIdx]['fraction']
-formula = "1"
-formulaVars = []
-for i in range(len(elemNames)-1):
-    elemName = elemNames[i]
-    ws.factory(f'v_{elemName}[{_elemFracs[i]}, 0, 1]')
-    ws.var(f'v_{elemName}').setConstant(True)
-    formula += f"-@{i}"
-    formulaVars.append(f'v_{elemName}')
-formulaVars = ','.join(formulaVars)
-ws.factory(f'EXPR::v_{elemNames[-1]}("{formula}", {{ {formulaVars} }})')
-del(formula)
-del(formulaVars)
-
-v_elemFracs = ROOT.RooArgList()
-for i in range(len(elemNames)-1):
-  v_elemFracs.add(ws.var(f'v_{elemNames[i]}'))
-v_elemFracs.add(ws.function(f'v_{elemNames[-1]}'))
-
-## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
 grps_HM = ROOT.std.vector('TGraph')()
 for elemName in elemNames:
     _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{elemName}'))
     ROOT.gROOT.cd()
     grps_HM.push_back(grp.Clone())
     del(grp)
-################################################################################
 
 ROOT.gROOT.cd()
 cHM = ROOT.TCanvas("cHM", "Huber Mueller Energy spectrum", 500, 500)
@@ -199,7 +180,7 @@ legENu.AddEntry(frameENu.findObject("pdf_ENu_B"),
                 "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
 
 v_sin14.setVal(0.5)
-v_dm41.setVal(5.0)
+v_dm41.setVal(0.5)
 pdf_ENu.plotOn(frameENu, ROOT.RooFit.Name("pdf_ENu_C"),
                ROOT.RooFit.LineColor(ROOT.kViolet+1), ROOT.RooFit.LineWidth(2))
 legENu.AddEntry(frameENu.findObject("pdf_ENu_C"),
@@ -256,7 +237,7 @@ legEReco.AddEntry(frameEReco.findObject("pdf_EReco_B"),
                 "sin_{14}=%.2f, #Delta m_{41}=%.2f" % (v_sin14.getVal(), v_dm41.getVal()))
 
 v_sin14.setVal(0.5)
-v_dm41.setVal(5.0)
+v_dm41.setVal(0.5)
 pdf_EReco.plotOn(frameEReco, ROOT.RooFit.Name("pdf_EReco_C"),
                  ROOT.RooFit.LineColor(ROOT.kViolet+1), ROOT.RooFit.LineWidth(2))
 legEReco.AddEntry(frameEReco.findObject("pdf_EReco_C"),
