@@ -38,5 +38,9 @@ $$
 = \sum_{j} R_{ij} \int_{E_i}^{E_{i+1}} dE~ \left(\phi_i + \phi\prime_i(E-E_i)\right) \left(\sigma_i + \sigma\prime_i(E-E_i)\right)
 \left[1 - \sin^2 2\theta_{13}\sin^2\left(\frac{K_{31}}{E}\right) - \cdots \right],
 $$
+$$
+= \sum_{j} R_{ij} \left[ \int_{E_i}^{E_{i+1}} dE~ \left(AE^2 + BE + C \right) - \frac{1}{2} \sin^2 2\theta_{13} \int_{E_i}^{E_{i+1}} dE~  \left(AE^2 + BE + C \right) \left( 1 - \cos\left(\frac{2K_{31}}{E}\right) \right) - \cdots \right], 
+$$
 
-The integral of envelope term is trivial, an integral of 2nd order polynomial. On the other hands, the disappearing term or oscillating term is somehow tricky which involves $\int dE E^n sin^2(K/E)$.
+The integral of envelope term is trivial, an integral of 2nd order polynomial. On the other hands, the disappearing term or oscillating term is somehow tricky due to $\int dE E^n sin^2(K/E)$ or equivalentely $\int dE E^n cos(2K/E)$. 
+From the table of integrals or mathematica, one can write the results involving sine-integral $Si(x)$ or cosine-integral $Ci(x)$, which can be found in ROOT's special functions, `Math::sinint(x)` and `Math::cosint(x)`.
