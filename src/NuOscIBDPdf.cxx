@@ -140,10 +140,10 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1,
                                 const double s0, const double s1,
                                 const double s13, const double k31,
                                 const double s14, const double k41) const {
-  if (e0 <= 0)
+  const double dE = e1 - e0;
+  if (e0 <= 0 or dE <= 0)
     return 0;
 
-  const double dE = e1 - e0;
   const double dFdE = (f1 - f0) / dE;
   const double dSdE = (s1 - s0) / dE;
 
@@ -153,22 +153,22 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1,
 
   const double kk31e0 = 2 * k31 / e0;
   const double si31e0 = ROOT::Math::sinint(kk31e0);
-  const double ci31e0 = ROOT::Math::cosint(kk31e0);
+  const double ci31e0 = kk31e0 <= 0 ? 0 : ROOT::Math::cosint(kk31e0);
   const double sin31e0 = std::sin(kk31e0), cos31e0 = std::cos(kk31e0);
 
   const double kk31e1 = 2 * k31 / e1;
   const double si31e1 = ROOT::Math::sinint(kk31e1);
-  const double ci31e1 = ROOT::Math::cosint(kk31e1);
+  const double ci31e1 = kk31e1 <= 0 ? 0 : ROOT::Math::cosint(kk31e1);
   const double sin31e1 = std::sin(kk31e1), cos31e1 = std::cos(kk31e1);
 
   const double kk41e0 = 2 * k41 / e0;
   const double si41e0 = ROOT::Math::sinint(kk41e0);
-  const double ci41e0 = ROOT::Math::cosint(kk41e0);
+  const double ci41e0 = kk41e0 <= 0 ? 0 : ROOT::Math::cosint(kk41e0);
   const double sin41e0 = std::sin(kk41e0), cos41e0 = std::cos(kk41e0);
 
   const double kk41e1 = 2 * k41 / e1;
   const double si41e1 = ROOT::Math::sinint(kk41e1);
-  const double ci41e1 = ROOT::Math::cosint(kk41e1);
+  const double ci41e1 = kk41e1 <= 0 ? 0 : ROOT::Math::cosint(kk41e1);
   const double sin41e1 = std::sin(kk41e1), cos41e1 = std::cos(kk41e1);
 
   // Envelop term

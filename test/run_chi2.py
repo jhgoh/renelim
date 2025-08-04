@@ -90,10 +90,10 @@ v_constr_dm31 = ROOT.RooGaussian("v_constr_dm31", "Constraint on dm31",
 constrs = ROOT.RooArgSet(v_constr_sin13, v_constr_dm31)
 
 # Save default integrator precision so we can restore it later if needed
-epsAbs_default = v_ENu.getIntegratorConfig().epsAbs()
-epsRel_default = v_ENu.getIntegratorConfig().epsRel()
-v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
-v_ENu.getIntegratorConfig().setEpsRel(5e-7)
+#epsAbs_default = v_ENu.getIntegratorConfig().epsAbs()
+#epsRel_default = v_ENu.getIntegratorConfig().epsRel()
+#v_ENu.getIntegratorConfig().setEpsAbs(5e-7)
+#v_ENu.getIntegratorConfig().setEpsRel(5e-7)
 # To restore the original values:
 # v_ENu.getIntegratorConfig().setEpsAbs(epsAbs_default)
 # v_ENu.getIntegratorConfig().setEpsRel(epsRel_default)
