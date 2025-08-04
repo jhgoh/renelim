@@ -1,14 +1,3 @@
-#include "Riostream.h"
-
-#include "NuOscIBDPdf.h"
-#include "RooAbsCategory.h"
-#include "RooAbsReal.h"
-// #include <math.h>
-#include "Math/SpecFunc.h"
-#include "TMath.h"
-
-#include <algorithm>
-
 ClassImp(NuOscIBDPdf);
 
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,
@@ -21,19 +10,19 @@ NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, Roo
   assert(elemFracs.getSize() == elemSpects.size());
   elemFracs_.add(elemFracs);
 
-  // Load the neutrino energy spectrum 
+  // Load neutrino energy spectra for each fuel component.
   for (int i = 0; i < elemFracs_.getSize(); ++i) {
     elemSpectsX_.push_back({});
     elemSpectsY_.push_back({});
     loadFromTGraph(elemSpects[i], elemSpectsX_[i], elemSpectsY_[i]);
   }
 
-  // Load the cross section curve
+  // Load the IBD cross-section curve.
   loadFromTGraph(grpXsec, ibdXsecX_, ibdXsecY_);
 
-  // Find the edge points of all curves.
+  // Build a unified set of energy bin edges from all spectra and the cross section.
   std::vector<double> allEdges;
-  for (const auto& xs : elemSpectsX_) {
+  for (const auto &xs : elemSpectsX_) {
     allEdges.insert(allEdges.end(), xs.begin(), xs.end());
   }
   allEdges.insert(allEdges.end(), ibdXsecX_.begin(), ibdXsecX_.end());
@@ -41,8 +30,8 @@ NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, Roo
   if (!allEdges.empty())
     xEdges_.push_back(allEdges.front());
   const double tol = 1e-7;
-  for (auto x: allEdges) {
-    if (std::abs(x-xEdges_.back()) > tol)
+  for (auto x : allEdges) {
+    if (std::abs(x - xEdges_.back()) > tol)
       xEdges_.push_back(x);
   }
 }
@@ -52,8 +41,7 @@ NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf &other, const char *name)
       sin13_("sin13", this, other.sin13_), dm31_("dm31", this, other.dm31_),
       sin14_("sin14", this, other.sin14_), dm41_("dm41", this, other.dm41_),
       elemSpectsX_(other.elemSpectsX_), elemSpectsY_(other.elemSpectsY_),
-      ibdXsecX_(other.ibdXsecX_), ibdXsecY_(other.ibdXsecY_),
-      xEdges_(other.xEdges_) {
+      ibdXsecX_(other.ibdXsecX_), ibdXsecY_(other.ibdXsecY_), xEdges_(other.xEdges_) {
   elemFracs_.add(other.elemFracs_);
 }
 
@@ -77,11 +65,11 @@ void NuOscIBDPdf::loadFromTGraph(const TGraph *grp, std::vector<double> &xx,
 double NuOscIBDPdf::interpolate(const double x, const std::vector<double> &xx,
                                 const std::vector<double> &yy) const {
   auto itr = std::lower_bound(xx.begin(), xx.end(), x);
-  if (itr == xx.begin() or itr == xx.end()) {
-    if (x == xx[0])
-      return yy[0]; // At boundary
+  if (itr == xx.begin() || itr == xx.end()) {
+    if (x == xx.front())
+      return yy.front(); // at boundary
     else
-      return 0; // Outside of the boundary
+      return 0; // outside the defined range
   }
 
   const size_t idx = itr - xx.begin();
@@ -118,7 +106,7 @@ double NuOscIBDPdf::analyticalIntegral(int code, const char *rangeName) const {
   }
 
   double sumW = 0;
-  for (int i=0, nn=xEdges_.size() - 1; i < nn; ++i) {
+  for (int i = 0, nn = xEdges_.size() - 1; i < nn; ++i) {
     const double e0 = xEdges_[i], e1 = xEdges_[i + 1];
 
     double f0 = 0, f1 = 0;
@@ -135,13 +123,11 @@ double NuOscIBDPdf::analyticalIntegral(int code, const char *rangeName) const {
   return sumW;
 }
 
-double NuOscIBDPdf::subIntegral(const double e0, const double e1,
-                                const double f0, const double f1,
-                                const double s0, const double s1,
-                                const double s13, const double k31,
-                                const double s14, const double k41) const {
+double NuOscIBDPdf::subIntegral(const double e0, const double e1, const double f0, const double f1,
+                                const double s0, const double s1, const double s13,
+                                const double k31, const double s14, const double k41) const {
   const double dE = e1 - e0;
-  if (e0 <= 0 or dE <= 0)
+  if (e0 <= 0 || dE <= 0)
     return 0;
 
   const double dFdE = (f1 - f0) / dE;
@@ -171,11 +157,11 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1,
   const double ci41e1 = kk41e1 <= 0 ? 0 : ROOT::Math::cosint(kk41e1);
   const double sin41e1 = std::sin(kk41e1), cos41e1 = std::cos(kk41e1);
 
-  // Envelop term
+  // Envelope term
   const double int0 = e0 * (a3 * e0 * e0 + b2 * e0 + c1);
   const double int1 = e1 * (a3 * e1 * e1 + b2 * e1 + c1);
 
-  // Disappearance term for nu_3
+  // Disappearance term for $\nu_3$
   const double int31A0 = 2 * k31 * k31 * k31 * si31e0 +
                          (k31 * k31 * e0 - e0 * e0 * e0 / 2) * cos31e0 + e0 * e0 * e0 / 2 +
                          k31 / 2 * e0 * e0 * sin31e0;
@@ -190,7 +176,7 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1,
       -2 * k31 * k31 * ci31e1 + k31 * e1 * sin31e1 - e1 * e1 / 2 * cos31e1 + e1 * e1 / 2;
   const double int31C1 = -k31 * si31e1 + e1 / 2 * (1 - cos31e1);
 
-  // Disappearance term for nu_4
+  // Disappearance term for $\nu_4$
   const double int41A0 = 2 * k41 * k41 * k41 * si41e0 +
                          (k41 * k41 * e0 - e0 * e0 * e0 / 2) * cos41e0 + e0 * e0 * e0 / 2 +
                          k41 / 2 * e0 * e0 * sin41e0;
@@ -207,26 +193,28 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1,
 
   // Sum up values
   const double intEnv = int1 - int0;
-  const double int31 = a3 * (int31A1 - int31A0) + b2 * (int31B1 - int31B0) + c1 * (int31C1 - int31C0);
-  const double int41 = a3 * (int41A1 - int41A0) + b2 * (int41B1 - int41B0) + c1 * (int41C1 - int41C0);
+  const double int31 =
+      a3 * (int31A1 - int31A0) + b2 * (int31B1 - int31B0) + c1 * (int31C1 - int31C0);
+  const double int41 =
+      a3 * (int41A1 - int41A0) + b2 * (int41B1 - int41B0) + c1 * (int41C1 - int41C0);
 
-  return (intEnv - s13*int31 - s14*int41)/dE;
+  return (intEnv - s13 * int31 - s14 * int41) / dE;
 }
 
 double NuOscIBDPdf::evaluate() const {
   const double x = x_->getVal();
   const double l = l_->getVal();
   if (x <= 0)
-    return 0; // safeguard for unphysical range
+    return 0; // safeguard for unphysical energy
 
   const double sin13 = sin13_->getVal();
   const double dm31 = dm31_->getVal();
-  const double sinD13 = std::sin(dm31 * 1.27 * l / x); // 1.27 factor comes from 1/4 hbar c
+  const double sinD13 = std::sin(dm31 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
   const double prob13 = 1 - sin13 * sinD13 * sinD13;
 
   const double sin14 = sin14_->getVal();
   const double dm41 = dm41_->getVal();
-  const double sinD14 = std::sin(dm41 * 1.27 * l / x); // 1.27 factor comes from 1/4 hbar c
+  const double sinD14 = std::sin(dm41 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
   const double prob14 = prob13 - sin14 * sinD14 * sinD14;
 
   double spec = 0;

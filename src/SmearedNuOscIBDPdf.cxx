@@ -1,25 +1,20 @@
-#include "SmearedNuOscIBDPdf.h"
-
-// We start from the reduced reco-energy formula:
-//   P_i = \sum_j R_ij \int_{E_j}^{E_{j+1}) F(E)*S(E) (1-sin14*sin^2(K41/E)-sin13*...)
-//     K41 = 1.27*dm41*L
-//     R_ij = response matrix
-// F(E) and S(E) Huber-Mueller and IBD cross section curve,
-//   F(E) = F(E_j) + (dF/dE) * (E-E_j) = F_j + (F_{j+1}-F_j)/(E_{j+1}-E_j) * (E-E_j)
-//   S(E) = S(E_j) + (dS/dE) * (E-E_j) = S_j + (S_{j+1}-S_j)/(E_{j+1}-E_j) * (E-E_j)
-// Note that more precise evaluation can be done by introducing finer binning
-// according to the data points of F(E)'s and S(E)'s original papers.
+// Implementation of the smeared IBD oscillation spectrum. The starting point
+// is the binned formula
+//   P_i = \sum_j R_{ij} \int_{E_j}^{E_{j+1}} F(E) S(E)
+//         [1 - \sin^2 2\theta_{14}\sin^2(K_{41}/E)
+//          - \sin^2 2\theta_{13}\sin^2(K_{31}/E)],
+// where $R_{ij}$ is the response matrix. Both the flux F(E) and cross section
+// S(E) are approximated as linear functions within each bin.
+// A more precise evaluation can be obtained by refining the binning according
+// to the original data points of F(E) and S(E).
 //
-// Note: Some terms in the integral can be done in advance,
-//   P_i = Penv_i - sin14*Posc_i(K41) - sin13*Posc_i(K31)
-// The Penv_i can be done at the constructor, which was considered in the first-working version
-// but the current version do the computation in every calls for code-reusability of
-// the mother class, NuOscIBDPdf::subIntegral()
+// Certain envelope terms of the integral could be precomputed, but for
+// simplicity and code reuse the current implementation evaluates them at each
+// call using NuOscIBDPdf::subIntegral().
 
 #include "Riostream.h"
 #include "RooAbsCategory.h"
 #include "RooAbsReal.h"
-// #include <math.h>
 #include "TMath.h"
 
 #include "RooRealVar.h"
@@ -35,32 +30,33 @@ SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const char *name, const char *title, RooA
                                        const TGraph *grpXsec, const TH2 *hResp)
     : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs, elemSpects, grpXsec),
       xr_("xr", "xr", this, xr), respMat_(hResp->GetNbinsY() + 1, hResp->GetNbinsX() + 1) {
-  // Load the response matrix and its binning
+  // Load the response matrix and normalise each true-energy slice.
   for (int ix = 0; ix <= hResp->GetNbinsX(); ++ix) {
     binsT_.push_back(hResp->GetXaxis()->GetBinLowEdge(ix + 1));
   }
   for (int iy = 0; iy <= hResp->GetNbinsY(); ++iy) {
     binsR_.push_back(hResp->GetYaxis()->GetBinLowEdge(iy + 1));
   }
-  for (int ix = 1; ix <= hResp->GetNbinsX(); ++ix) { // Etrue axis
+  for (int ix = 1; ix <= hResp->GetNbinsX(); ++ix) { // true-E axis
     double sumE = 0;
-    for (int iy = 1; iy <= hResp->GetNbinsY(); ++iy) { // Ereco axis
+    for (int iy = 1; iy <= hResp->GetNbinsY(); ++iy) { // reco-E axis
       const double val = hResp->GetBinContent(ix, iy);
       sumE += val;
     }
     if (sumE == 0)
       continue;
-    for (int iy = 1; iy <= hResp->GetNbinsY(); ++iy) { // Ereco axis
+    for (int iy = 1; iy <= hResp->GetNbinsY(); ++iy) { // reco-E axis
       const double val = hResp->GetBinContent(ix, iy);
-      respMat_(iy - 1, ix - 1) = val / sumE; // NOTE: different indexing
+      // NOTE: different indexing: respMat_(iy - 1, ix - 1) stores (reco, true)
+      // order, opposite to the (x, y) convention used by TH2D
+      respMat_(iy - 1, ix - 1) = val / sumE; // normalised
     }
   }
 }
 
 SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const SmearedNuOscIBDPdf &other, const char *name)
     : NuOscIBDPdf(other, name), xr_("xr", this, other.xr_), respMat_(other.respMat_),
-      binsT_(other.binsT_), binsR_(other.binsR_) {
-}
+      binsT_(other.binsT_), binsR_(other.binsR_) {}
 
 int SmearedNuOscIBDPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
                                               const char * /*rangeName*/) const {
@@ -76,16 +72,15 @@ double SmearedNuOscIBDPdf::analyticalIntegral(int code, const char *rangeName) c
 }
 
 double SmearedNuOscIBDPdf::evaluate() const {
-  // Find the bin number of the given reco-energy, xr
+  // Determine the reconstructed-energy bin.
   const double xr = xr_->getVal();
-  if (xr < binsR_.front() or xr >= binsR_.back())
+  if (xr < binsR_.front() || xr >= binsR_.back())
     return 0;
 
   auto itr = std::upper_bound(binsR_.begin(), binsR_.end(), xr);
   const size_t idx = std::distance(binsR_.begin(), itr) - 1;
 
-  // Compute the detector resolution convoluted, binned, energy distribution.
-  // Details can be found in the header file.
+  // Compute the smeared, binned energy distribution.
   const double l = l_->getVal();
 
   const double sin13 = sin13_->getVal();
@@ -103,7 +98,7 @@ double SmearedNuOscIBDPdf::evaluate() const {
   }
 
   double sumW = 0;
-  for (int j = 0, nn = binsT_.size()-1; j < nn; ++j) {
+  for (int j = 0, nn = binsT_.size() - 1; j < nn; ++j) {
     const double e0 = binsT_[j], e1 = binsT_[j + 1];
 
     double f0 = 0, f1 = 0;
