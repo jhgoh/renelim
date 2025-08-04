@@ -34,8 +34,8 @@ protected:
 
   std::vector<std::vector<double>> elemSpectsX_;
   std::vector<std::vector<double>> elemSpectsY_;
-
   std::vector<double> ibdXsecX_, ibdXsecY_;
+  std::vector<double> xEdges_;
 
   double evaluate() const override;
   int getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
@@ -45,6 +45,11 @@ protected:
   void loadFromTGraph(const TGraph *grp, std::vector<double> &xx, std::vector<double> &yy);
   double interpolate(const double x, const std::vector<double> &xx,
                      const std::vector<double> &yy) const;
+  double subIntegral(const double e0, const double e1,
+                     const double f0, const double f1,
+                     const double s0, const double s1,
+                     const double s13, const double k31,
+                     const double s14, const double k41) const; // Integral within the range, xEdges_[ixLo] to xEdges_[ixLo+1]
 
 private:
   ClassDef(NuOscIBDPdf, 1) // Your description goes here...

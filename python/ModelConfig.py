@@ -167,60 +167,38 @@ def load_model(config_path="config.yaml", det_idx=0):
     ws.Import(v_EReco)
     v_EReco = ws.var("v_EReco")
 
-    if h_resp:
-        # h_respT = ROOT.TH2D("hRespT", h_resp.GetTitle(),
-        #                    h_resp.GetNbinsY(), h_resp.GetYaxis().GetXmin(), h_resp.GetYaxis().GetXmax(),
-        #                    h_resp.GetNbinsX(), h_resp.GetXaxis().GetXmin(), h_resp.GetXaxis().GetXmax())
-        # for i in range(h_resp.GetNbinsX()):
-        #    for j in range(h_resp.GetNbinsY()):
-        #        h_respT.SetBinContent(j+1, i+1, h_resp.GetBinContent(i+1, j+1))
-        # dh_respT = ROOT.RooDataHist("dhRespT", h_respT.GetTitle(),
-        #                            ROOT.RooArgList(v_EReco, v_ENu), h_respT)
-        # pdf_respT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
-        #                           ROOT.RooArgList(v_EReco, v_ENu), dh_respT)
-        # pdf_joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
-        #                            ROOT.RooArgList(pdf_ENu, pdf_respT),
-        #                            ROOT.RooFit.Conditional(ROOT.RooArgSet(pdf_respT), ROOT.RooArgSet(v_EReco)))
-        # pdf_EReco = pdf_joint.createProjection(ROOT.RooArgSet(v_ENu))
-        # pdf_EReco.SetName("pdf_EReco")
-        # pdf_EReco.SetTitle("PDF of reconstructed energy")
-        pdf_EReco = ROOT.SmearedNuOscIBDPdf(
-            "pdf_EReco",
-            "pdf_EReco",
-            v_EReco,
-            v_ENu,
-            v_L,
-            v_sin13,
-            v_dm31,
-            v_sin14,
-            v_dm41,
-            v_elem_fracs,
-            grps_HM,
-            grp_xsec,
-            h_resp,
-        )
-        ws.Import(pdf_EReco)
-    else:
-        v_a2 = ROOT.RooRealVar("v_a2", "v_a2", respA**2)
-        v_b2 = ROOT.RooRealVar("v_b2", "v_b2", respB**2)
-        v_c2 = ROOT.RooRealVar("v_c2", "v_c2", respC**2)
-        vs_respPar = ROOT.RooArgList(v_a2, v_b2, v_c2)
-        pdf_EReco = ROOT.SmearedNuOscIBDPdf(
-            "pdf_EReco",
-            "pdf_EReco",
-            v_EReco,
-            v_ENu,
-            v_L,
-            v_sin13,
-            v_dm31,
-            v_sin14,
-            v_dm41,
-            v_elem_fracs,
-            grps_HM,
-            grp_xsec,
-            vs_respPar,
-        )
-        ws.Import(pdf_EReco)
+    # h_respT = ROOT.TH2D("hRespT", h_resp.GetTitle(),
+    #                    h_resp.GetNbinsY(), h_resp.GetYaxis().GetXmin(), h_resp.GetYaxis().GetXmax(),
+    #                    h_resp.GetNbinsX(), h_resp.GetXaxis().GetXmin(), h_resp.GetXaxis().GetXmax())
+    # for i in range(h_resp.GetNbinsX()):
+    #    for j in range(h_resp.GetNbinsY()):
+    #        h_respT.SetBinContent(j+1, i+1, h_resp.GetBinContent(i+1, j+1))
+    # dh_respT = ROOT.RooDataHist("dhRespT", h_respT.GetTitle(),
+    #                            ROOT.RooArgList(v_EReco, v_ENu), h_respT)
+    # pdf_respT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
+    #                           ROOT.RooArgList(v_EReco, v_ENu), dh_respT)
+    # pdf_joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
+    #                            ROOT.RooArgList(pdf_ENu, pdf_respT),
+    #                            ROOT.RooFit.Conditional(ROOT.RooArgSet(pdf_respT), ROOT.RooArgSet(v_EReco)))
+    # pdf_EReco = pdf_joint.createProjection(ROOT.RooArgSet(v_ENu))
+    # pdf_EReco.SetName("pdf_EReco")
+    # pdf_EReco.SetTitle("PDF of reconstructed energy")
+    pdf_EReco = ROOT.SmearedNuOscIBDPdf(
+        "pdf_EReco",
+        "pdf_EReco",
+        v_EReco,
+        v_ENu,
+        v_L,
+        v_sin13,
+        v_dm31,
+        v_sin14,
+        v_dm41,
+        v_elem_fracs,
+        grps_HM,
+        grp_xsec,
+        h_resp,
+    )
+    ws.Import(pdf_EReco)
     pdf_EReco = ws.pdf("pdf_EReco")
 
     return {
