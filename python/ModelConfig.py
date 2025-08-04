@@ -4,7 +4,8 @@ import numpy as np
 
 from Config import ConfigRENE, getFileAndObj
 
-def load_model(config_path='config.yaml', det_idx=0):
+
+def load_model(config_path="config.yaml", det_idx=0):
     """Build the RooFit model described by the configuration.
 
     Parameters
@@ -33,8 +34,8 @@ def load_model(config_path='config.yaml', det_idx=0):
     ## We take only one detector for this version.
     ## We also guess range of neutrino energy distribution from the response matrix
     ###############################################################################
-    det_names = config.getDetectors('name')
-    responses = config.getDetectors('response')
+    det_names = config.getDetectors("name")
+    responses = config.getDetectors("response")
     baselines = [config.getBaselines(name) for name in det_names]
 
     det_name = det_names[det_idx]
@@ -58,7 +59,7 @@ def load_model(config_path='config.yaml', det_idx=0):
         nbins_enu, min_enu, max_enu = 100, 0, 10
         nbins_ereco, min_ereco, max_ereco = 100, 0, 10
     else:
-        raise ValueError('detectors[].response has to be string or list')
+        raise ValueError("detectors[].response has to be string or list")
 
     reactor_idx = np.argmin(baseline_list)
     baseline = baseline_list[reactor_idx]
@@ -75,10 +76,10 @@ def load_model(config_path='config.yaml', det_idx=0):
     ws.Import(v_dm41)
     ws.Import(v_sin13)
     ws.Import(v_dm31)
-    v_sin13 = ws.var('v_sin13')
-    v_sin14 = ws.var('v_sin14')
-    v_dm31 = ws.var('v_dm31')
-    v_dm41 = ws.var('v_dm41')
+    v_sin13 = ws.var("v_sin13")
+    v_sin14 = ws.var("v_sin14")
+    v_dm31 = ws.var("v_dm31")
+    v_dm41 = ws.var("v_dm41")
 
     ###############################################################################
     ## Neutrino energy spectrums
@@ -86,27 +87,27 @@ def load_model(config_path='config.yaml', det_idx=0):
     ## (Maybe later) Consider the burn-up effect,
     ## the fuel composition is a subject to be changed in time.
     ## We choose the 6th core only (1st one in the configuration)
-    elem_names = config.getReactors('elements')[reactor_idx]['name']
-    elem_fracs = config.getReactors('elements')[reactor_idx]['fraction']
+    elem_names = config.getReactors("elements")[reactor_idx]["name"]
+    elem_fracs = config.getReactors("elements")[reactor_idx]["fraction"]
     formula = "1"
     formula_vars = []
-    for i in range(len(elem_names)-1):
+    for i in range(len(elem_names) - 1):
         en = elem_names[i]
-        ws.factory(f'v_{en}[{elem_fracs[i]}, 0, 1]')
-        ws.var(f'v_{en}').setConstant(True)
+        ws.factory(f"v_{en}[{elem_fracs[i]}, 0, 1]")
+        ws.var(f"v_{en}").setConstant(True)
         formula += f"-@{i}"
-        formula_vars.append(f'v_{en}')
-    formula_vars = ','.join(formula_vars)
+        formula_vars.append(f"v_{en}")
+    formula_vars = ",".join(formula_vars)
     ws.factory(f'EXPR::v_{elem_names[-1]}("{formula}", {{ {formula_vars} }})')
     v_elem_fracs = ROOT.RooArgList()
-    for i in range(len(elem_names)-1):
-        v_elem_fracs.add(ws.var(f'v_{elem_names[i]}'))
-    v_elem_fracs.add(ws.function(f'v_{elem_names[-1]}'))
+    for i in range(len(elem_names) - 1):
+        v_elem_fracs.add(ws.var(f"v_{elem_names[i]}"))
+    v_elem_fracs.add(ws.function(f"v_{elem_names[-1]}"))
 
     ## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
-    grps_HM = ROOT.std.vector('TGraph')()
+    grps_HM = ROOT.std.vector("TGraph")()
     for en in elem_names:
-        _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{en}'))
+        _, grp = getFileAndObj(config.get(f"physics.isotope_flux.{en}"))
         ROOT.gROOT.cd()
         grps_HM.push_back(grp.Clone())
         del grp
@@ -114,17 +115,17 @@ def load_model(config_path='config.yaml', det_idx=0):
     ###############################################################################
     ## IBD cross section
     ###############################################################################
-    _, grp_xsec = getFileAndObj(config.get('physics.ibd_xsec'))
+    _, grp_xsec = getFileAndObj(config.get("physics.ibd_xsec"))
     ROOT.gROOT.cd()
 
     ################################################################################
     ## Build the Oscillated neutrino energy spectrum
     ################################################################################
     v_ENu = ROOT.RooRealVar("v_ENu", "Neutrino Energy", min_enu, max_enu, unit="MeV")
-    #v_ENu.setBins(nbins_enu)
+    # v_ENu.setBins(nbins_enu)
     v_ENu.setBins(1024)
     ws.Import(v_ENu)
-    v_ENu = ws.var('v_ENu')
+    v_ENu = ws.var("v_ENu")
 
     _sin13, _sin13err = config.get("physics.oscillation.sin13")
     _dm31, _dm31err = config.get("physics.oscillation.dm31")
@@ -134,70 +135,101 @@ def load_model(config_path='config.yaml', det_idx=0):
     v_L = ROOT.RooRealVar("v_L", "L", 0, 10000, unit="meter")
     v_L.setVal(baseline)
     ws.Import(v_L)
-    v_L = ws.var('v_L')
+    v_L = ws.var("v_L")
     v_L.setConstant(True)
 
-    pdf_ENu = ROOT.NuOscIBDPdf("pdf_ENu", "pdf_ENu", v_ENu, v_L,
-                               v_sin13, v_dm31, v_sin14, v_dm41,
-                               v_elem_fracs, grps_HM,
-                               grp_xsec)
+    pdf_ENu = ROOT.NuOscIBDPdf(
+        "pdf_ENu",
+        "pdf_ENu",
+        v_ENu,
+        v_L,
+        v_sin13,
+        v_dm31,
+        v_sin14,
+        v_dm41,
+        v_elem_fracs,
+        grps_HM,
+        grp_xsec,
+    )
     ws.Import(pdf_ENu)
-    pdf_ENu = ws.pdf('pdf_ENu')
+    pdf_ENu = ws.pdf("pdf_ENu")
 
     ################################################################################
     ## Build the convoluted PDF
     ## to do the convolution with conditional variable, the response matrix
     ## has to be transposed.
     ################################################################################
-    v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", min_ereco, max_ereco, unit="MeV")
-    #v_EReco.setBins(nbins_ereco)
+    v_EReco = ROOT.RooRealVar(
+        "v_EReco", "Reconstructed Energy", min_ereco, max_ereco, unit="MeV"
+    )
+    # v_EReco.setBins(nbins_ereco)
     v_EReco.setBins(1024)
     ws.Import(v_EReco)
-    v_EReco = ws.var('v_EReco')
+    v_EReco = ws.var("v_EReco")
 
     if h_resp:
-        #h_respT = ROOT.TH2D("hRespT", h_resp.GetTitle(),
+        # h_respT = ROOT.TH2D("hRespT", h_resp.GetTitle(),
         #                    h_resp.GetNbinsY(), h_resp.GetYaxis().GetXmin(), h_resp.GetYaxis().GetXmax(),
         #                    h_resp.GetNbinsX(), h_resp.GetXaxis().GetXmin(), h_resp.GetXaxis().GetXmax())
-        #for i in range(h_resp.GetNbinsX()):
+        # for i in range(h_resp.GetNbinsX()):
         #    for j in range(h_resp.GetNbinsY()):
         #        h_respT.SetBinContent(j+1, i+1, h_resp.GetBinContent(i+1, j+1))
-        #dh_respT = ROOT.RooDataHist("dhRespT", h_respT.GetTitle(),
+        # dh_respT = ROOT.RooDataHist("dhRespT", h_respT.GetTitle(),
         #                            ROOT.RooArgList(v_EReco, v_ENu), h_respT)
-        #pdf_respT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
+        # pdf_respT = ROOT.RooHistPdf("pdf_RespT", "pdf_RespT",
         #                           ROOT.RooArgList(v_EReco, v_ENu), dh_respT)
-        #pdf_joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
+        # pdf_joint = ROOT.RooProdPdf("pdf_Joint", "Joint pdf",
         #                            ROOT.RooArgList(pdf_ENu, pdf_respT),
         #                            ROOT.RooFit.Conditional(ROOT.RooArgSet(pdf_respT), ROOT.RooArgSet(v_EReco)))
-        #pdf_EReco = pdf_joint.createProjection(ROOT.RooArgSet(v_ENu))
-        #pdf_EReco.SetName("pdf_EReco")
-        #pdf_EReco.SetTitle("PDF of reconstructed energy")
-        pdf_EReco = ROOT.SmearedNuOscIBDPdf("pdf_EReco", "pdf_EReco",
-                                            v_EReco, v_ENu, v_L,
-                                            v_sin13, v_dm31, v_sin14, v_dm41,
-                                            v_elem_fracs, grps_HM, grp_xsec,
-                                            h_resp)
+        # pdf_EReco = pdf_joint.createProjection(ROOT.RooArgSet(v_ENu))
+        # pdf_EReco.SetName("pdf_EReco")
+        # pdf_EReco.SetTitle("PDF of reconstructed energy")
+        pdf_EReco = ROOT.SmearedNuOscIBDPdf(
+            "pdf_EReco",
+            "pdf_EReco",
+            v_EReco,
+            v_ENu,
+            v_L,
+            v_sin13,
+            v_dm31,
+            v_sin14,
+            v_dm41,
+            v_elem_fracs,
+            grps_HM,
+            grp_xsec,
+            h_resp,
+        )
         ws.Import(pdf_EReco)
     else:
         v_a2 = ROOT.RooRealVar("v_a2", "v_a2", respA**2)
         v_b2 = ROOT.RooRealVar("v_b2", "v_b2", respB**2)
         v_c2 = ROOT.RooRealVar("v_c2", "v_c2", respC**2)
         vs_respPar = ROOT.RooArgList(v_a2, v_b2, v_c2)
-        pdf_EReco = ROOT.SmearedNuOscIBDPdf("pdf_EReco", "pdf_EReco",
-                                            v_EReco, v_ENu, v_L,
-                                            v_sin13, v_dm31, v_sin14, v_dm41,
-                                            v_elem_fracs, grps_HM, grp_xsec,
-                                            vs_respPar)
+        pdf_EReco = ROOT.SmearedNuOscIBDPdf(
+            "pdf_EReco",
+            "pdf_EReco",
+            v_EReco,
+            v_ENu,
+            v_L,
+            v_sin13,
+            v_dm31,
+            v_sin14,
+            v_dm41,
+            v_elem_fracs,
+            grps_HM,
+            grp_xsec,
+            vs_respPar,
+        )
         ws.Import(pdf_EReco)
-    pdf_EReco = ws.pdf('pdf_EReco')
+    pdf_EReco = ws.pdf("pdf_EReco")
 
     return {
-        'ws': ws,
-        'config': config,
-        'v_sin14': v_sin14,
-        'v_dm41': v_dm41,
-        'v_ENu': v_ENu,
-        'v_EReco': v_EReco,
-        'pdf_ENu': pdf_ENu,
-        'pdf_EReco': pdf_EReco,
+        "ws": ws,
+        "config": config,
+        "v_sin14": v_sin14,
+        "v_dm41": v_dm41,
+        "v_ENu": v_ENu,
+        "v_EReco": v_EReco,
+        "pdf_ENu": pdf_ENu,
+        "pdf_EReco": pdf_EReco,
     }
