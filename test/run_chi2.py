@@ -26,6 +26,7 @@ if args.gui:
 import numpy as np
 from array import array
 import resource
+import time
 from tqdm import tqdm
 
 print("@@@ Setting up...")
@@ -165,48 +166,80 @@ minimizer.setEps(1e-6)
 
 sin14_scanned = []
 nll_scanned = []
+
+status_scanned = []
+covQual_scanned = []
+edm_scanned = []
+time_scanned = []
+
 for _sin14 in tqdm(sin14_toScan):
     v_sin14.setVal(_sin14)
     v_sin14.setConstant(True)
 
+    t0 = time.time()
     _status = minimizer.migrad()
+    minimizer.hesse()
     _nll = nll.getVal()
+    t1 = time.time()
 
     if _status == -1:
       print(f"Fit failure ({_status}): sin14={_sin14}, nll={_nll}")
       continue
 
+    result = minimizer.save()
+
     sin14_scanned.append(_sin14)
     nll_scanned.append(_nll)
 
+    status_scanned.append(_status)
+    covQual_scanned.append(result.covQual())
+    edm_scanned.append(result.edm())
+    time_scanned.append(t1-t0)
+
 sin14_scanned = np.array(sin14_scanned)
 nll_scanned = np.array(nll_scanned)
+
+status_scanned = np.array(status_scanned)
+covQual_scanned = np.array(covQual_scanned)
+edm_scanned = np.array(edm_scanned)
+time_scanned = np.array(time_scanned)
 
 if len(sin14_scanned) == 0:
   print("No successful fits")
   exit()
 
 _idxs = np.argsort(sin14_scanned)
+
 sin14_scanned = sin14_scanned[_idxs]
 nll_scanned = nll_scanned[_idxs]
+
+status_scanned = status_scanned[_idxs]
+covQual_scanned = covQual_scanned[_idxs]
+edm_scanned = edm_scanned[_idxs]
+time_scanned = time_scanned[_idxs]
 
 ## Perform minimization to find a global minimum of this search
 _imin = np.argmin(nll_scanned)
 v_sin14.setVal(sin14_scanned[_imin])
 v_sin14.setConstant(False)
 minimizer.setStrategy(2)
+t0 = time.time()
 _status = minimizer.migrad()
+minimizer.hesse()
+t1 = time.time()
 _sin14 = v_sin14.getVal()
+result = minimizer.save()
 if _status != -1 and _sin14 not in sin14_scanned:
   _idx = np.searchsorted(sin14_scanned, _sin14, side='left')
+
   sin14_scanned = np.insert(sin14_scanned, _idx, _sin14)
   nll_scanned = np.insert(nll_scanned, _idx, nll.getVal())
 
-## Proceed to the Feldman-Cousins tests
-#pl = ROOT.RooStats.ProfileLikelihoodTestStat(mcNull.GetPdf())
-#pl.SetOneSided(True)
+  status_scanned = np.insert(status_scanned, _idx, _status)
+  covQual_scanned = np.insert(covQual_scanned, _idx, result.covQual())
+  edm_scanned = np.insert(edm_scanned, _idx, result.edm())
+  time_scanned = np.insert(time_scanned, _idx, t1-t0)
 
-t90_scanned = np.zeros(len(sin14_scanned))
 pNull_scanned = np.zeros(len(sin14_scanned))
 pAlt_scanned = np.zeros(len(sin14_scanned))
 for i, _sin14 in tqdm(enumerate(sin14_scanned)):
@@ -214,24 +247,12 @@ for i, _sin14 in tqdm(enumerate(sin14_scanned)):
   v_sin14.setConstant(True)
   mcAlt.SetSnapshot(vs_poi)
 
-  t90 = 0
-  #limitFC = ROOT.RooStats.FeldmanCousins(asimovData, mcNull)
-  #limitFC.SetTestSize(0.1)
-  #limitFC.SetTestStatistic(pl)
-  #limitFC.SetNuisanceParameters(vs_nui)
-  #limitFC.SetNBins(20)
-  #limitFC.UseAdaptiveSampling(True)
-  #limitFC.FluctuateNumDataEntries(False)
-  #interval = limitFC.GetInterval()
-  #upper_limit = interval.UpperLimit(vs_poi)
-
   ## Create test statistic and calculators
   calcFreq = ROOT.RooStats.FrequentistCalculator(asimovData, mcNull, mcAlt)
   calcFreq.SetToys(args.toys, args.toys)
   sampler = calcFreq.GetTestStatSampler()
   resFreq = calcFreq.GetHypoTest()
 
-  t90_scanned[i] = t90
   pNull_scanned[i] = resFreq.NullPValue()
   pAlt_scanned[i] = resFreq.AlternatePValue()
 
@@ -241,24 +262,32 @@ tree = ROOT.TTree("limit", "limit tree")
 ptr_dm41 = array('d', [0])
 ptr_sin14 = array('d', [0])
 ptr_nll = array('d', [0])
-ptr_t90 = array('d', [0])
 ptr_pNull = array('d', [0])
 ptr_pAlt = array('d', [0])
+
+ptr_status = array('i', [0])
+ptr_covQual = array('i', [0])
+ptr_edm = array('d', [0])
+ptr_time = array('d', [0])
 
 tree.Branch("dm41", ptr_dm41, "dm41/D")
 tree.Branch("sin14", ptr_sin14, "sin14/D")
 tree.Branch("nll", ptr_nll, "nll/D")
-tree.Branch("t90", ptr_t90, "t90/D")
 tree.Branch("pNull", ptr_pNull, "pNull/D")
 tree.Branch("pAlt", ptr_pAlt, "pAlt/D")
 
 for i in range(len(sin14_scanned)):
   ptr_dm41[0] = dm41
   ptr_sin14[0] = sin14_scanned[i]
+
   ptr_nll[0] = nll_scanned[i]
-  ptr_t90[0] = t90_scanned[i]
   ptr_pNull[0] = pNull_scanned[i]
   ptr_pAlt[0] = pAlt_scanned[i]
+
+  ptr_status[0] = status_scanned[i]
+  ptr_covQual[0] = covQual_scanned[i]
+  ptr_edm[0] = edm_scanned[i]
+  ptr_time[0] = time_scanned[i]
 
   tree.Fill()
 tree.Write()
