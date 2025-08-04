@@ -167,10 +167,10 @@ minimizer.setEps(1e-6)
 sin14_scanned = []
 nll_scanned = []
 
-status_scanned = []
-covQual_scanned = []
 edm_scanned = []
 time_scanned = []
+status_scanned = []
+covQual_scanned = []
 
 for _sin14 in tqdm(sin14_toScan):
     v_sin14.setVal(_sin14)
@@ -191,18 +191,18 @@ for _sin14 in tqdm(sin14_toScan):
     sin14_scanned.append(_sin14)
     nll_scanned.append(_nll)
 
-    status_scanned.append(_status)
-    covQual_scanned.append(result.covQual())
     edm_scanned.append(result.edm())
     time_scanned.append(t1-t0)
+    status_scanned.append(_status)
+    covQual_scanned.append(result.covQual())
 
 sin14_scanned = np.array(sin14_scanned)
 nll_scanned = np.array(nll_scanned)
 
-status_scanned = np.array(status_scanned)
-covQual_scanned = np.array(covQual_scanned)
 edm_scanned = np.array(edm_scanned)
 time_scanned = np.array(time_scanned)
+status_scanned = np.array(status_scanned)
+covQual_scanned = np.array(covQual_scanned)
 
 if len(sin14_scanned) == 0:
   print("No successful fits")
@@ -213,10 +213,10 @@ _idxs = np.argsort(sin14_scanned)
 sin14_scanned = sin14_scanned[_idxs]
 nll_scanned = nll_scanned[_idxs]
 
-status_scanned = status_scanned[_idxs]
-covQual_scanned = covQual_scanned[_idxs]
 edm_scanned = edm_scanned[_idxs]
 time_scanned = time_scanned[_idxs]
+status_scanned = status_scanned[_idxs]
+covQual_scanned = covQual_scanned[_idxs]
 
 ## Perform minimization to find a global minimum of this search
 _imin = np.argmin(nll_scanned)
@@ -235,10 +235,10 @@ if _status != -1 and _sin14 not in sin14_scanned:
   sin14_scanned = np.insert(sin14_scanned, _idx, _sin14)
   nll_scanned = np.insert(nll_scanned, _idx, nll.getVal())
 
-  status_scanned = np.insert(status_scanned, _idx, _status)
-  covQual_scanned = np.insert(covQual_scanned, _idx, result.covQual())
   edm_scanned = np.insert(edm_scanned, _idx, result.edm())
   time_scanned = np.insert(time_scanned, _idx, t1-t0)
+  status_scanned = np.insert(status_scanned, _idx, _status)
+  covQual_scanned = np.insert(covQual_scanned, _idx, result.covQual())
 
 pNull_scanned = np.zeros(len(sin14_scanned))
 pAlt_scanned = np.zeros(len(sin14_scanned))
@@ -265,16 +265,21 @@ ptr_nll = array('d', [0])
 ptr_pNull = array('d', [0])
 ptr_pAlt = array('d', [0])
 
-ptr_status = array('i', [0])
-ptr_covQual = array('i', [0])
 ptr_edm = array('d', [0])
 ptr_time = array('d', [0])
+ptr_status = array('i', [0])
+ptr_covQual = array('i', [0])
 
 tree.Branch("dm41", ptr_dm41, "dm41/D")
 tree.Branch("sin14", ptr_sin14, "sin14/D")
 tree.Branch("nll", ptr_nll, "nll/D")
 tree.Branch("pNull", ptr_pNull, "pNull/D")
 tree.Branch("pAlt", ptr_pAlt, "pAlt/D")
+
+tree.Branch("edm", ptr_edm, "edm/D")
+tree.Branch("time", ptr_time, "time/D")
+tree.Branch("status", ptr_status, "status/I")
+tree.Branch("covQual", ptr_covQual, "covQual/I")
 
 for i in range(len(sin14_scanned)):
   ptr_dm41[0] = dm41
@@ -284,10 +289,10 @@ for i in range(len(sin14_scanned)):
   ptr_pNull[0] = pNull_scanned[i]
   ptr_pAlt[0] = pAlt_scanned[i]
 
-  ptr_status[0] = status_scanned[i]
-  ptr_covQual[0] = covQual_scanned[i]
   ptr_edm[0] = edm_scanned[i]
   ptr_time[0] = time_scanned[i]
+  ptr_status[0] = status_scanned[i]
+  ptr_covQual[0] = covQual_scanned[i]
 
   tree.Fill()
 tree.Write()
