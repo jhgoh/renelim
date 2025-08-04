@@ -139,17 +139,7 @@ def load_model(config_path="config.yaml", det_idx=0):
     v_L.setConstant(True)
 
     pdf_ENu = ROOT.NuOscIBDPdf(
-        "pdf_ENu",
-        "pdf_ENu",
-        v_ENu,
-        v_L,
-        v_sin13,
-        v_dm31,
-        v_sin14,
-        v_dm41,
-        v_elem_fracs,
-        grps_HM,
-        grp_xsec,
+        "pdf_ENu", "pdf_ENu", v_ENu, v_L, v_sin13, v_dm31, v_sin14, v_dm41, v_elem_fracs, grps_HM, grp_xsec
     )
     ws.Import(pdf_ENu)
     pdf_ENu = ws.pdf("pdf_ENu")
@@ -159,9 +149,7 @@ def load_model(config_path="config.yaml", det_idx=0):
     ## to do the convolution with conditional variable, the response matrix
     ## has to be transposed.
     ################################################################################
-    v_EReco = ROOT.RooRealVar(
-        "v_EReco", "Reconstructed Energy", min_ereco, max_ereco, unit="MeV"
-    )
+    v_EReco = ROOT.RooRealVar("v_EReco", "Reconstructed Energy", min_ereco, max_ereco, unit="MeV")
     # v_EReco.setBins(nbins_ereco)
     v_EReco.setBins(1024)
     ws.Import(v_EReco)
@@ -183,21 +171,13 @@ def load_model(config_path="config.yaml", det_idx=0):
     # pdf_EReco = pdf_joint.createProjection(ROOT.RooArgSet(v_ENu))
     # pdf_EReco.SetName("pdf_EReco")
     # pdf_EReco.SetTitle("PDF of reconstructed energy")
+    # fmt: off
     pdf_EReco = ROOT.SmearedNuOscIBDPdf(
-        "pdf_EReco",
-        "pdf_EReco",
-        v_EReco,
-        v_ENu,
-        v_L,
-        v_sin13,
-        v_dm31,
-        v_sin14,
-        v_dm41,
-        v_elem_fracs,
-        grps_HM,
-        grp_xsec,
-        h_resp,
+        "pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
+        v_sin13, v_dm31, v_sin14, v_dm41,
+        v_elem_fracs, grps_HM, grp_xsec, h_resp
     )
+    # fmt: on
     ws.Import(pdf_EReco)
     pdf_EReco = ws.pdf("pdf_EReco")
 
