@@ -19,7 +19,7 @@ where $\phi(E)$ is the neutrino flux, $\sigma(E)$ the IBD cross section, $L$ is 
 `SmearedNuOscIBDPdf` extends the above by incorporating an energy-dependent detector response described by a response matrix $R(\tilde{E},E)$. The reconstructed energy distribution is
 
 $$
-P(E') = \int dE~ R(\tilde{E},E) \phi(E) \sigma(E)
+P({\tilde{E}}) = \int dE~ R(\tilde{E},E) \phi(E) \sigma(E)
 \left[1 - \sin^2 2\theta_{13}\sin^2\left(\frac{K_{31}}{E}\right)
       - \sin^2 2\theta_{14}\sin^2\left(\frac{K_{41}}{E}\right)\right],
 $$
