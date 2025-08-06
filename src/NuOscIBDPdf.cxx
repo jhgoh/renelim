@@ -1,3 +1,14 @@
+#include "Riostream.h"
+
+#include "NuOscIBDPdf.h"
+#include "RooAbsCategory.h"
+#include "RooAbsReal.h"
+// #include <math.h>
+#include "Math/SpecFunc.h"
+#include "TMath.h"
+
+#include <algorithm>
+
 ClassImp(NuOscIBDPdf);
 
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,

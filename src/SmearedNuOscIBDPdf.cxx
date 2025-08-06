@@ -13,6 +13,7 @@
 // call using NuOscIBDPdf::subIntegral().
 
 #include "Riostream.h"
+#include "SmearedNuOscIBDPdf.h"
 #include "RooAbsCategory.h"
 #include "RooAbsReal.h"
 #include "TMath.h"
