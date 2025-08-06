@@ -248,13 +248,16 @@ for i, _sin14 in tqdm(enumerate(sin14_scanned)):
   mcAlt.SetSnapshot(vs_poi)
 
   ## Create test statistic and calculators
+  t0 = time.time()
   calcFreq = ROOT.RooStats.FrequentistCalculator(asimovData, mcNull, mcAlt)
   calcFreq.SetToys(args.toys, args.toys)
   sampler = calcFreq.GetTestStatSampler()
   resFreq = calcFreq.GetHypoTest()
+  t1 = time.time()
 
   pNull_scanned[i] = resFreq.NullPValue()
   pAlt_scanned[i] = resFreq.AlternatePValue()
+  time_scanned[i] += (t1-t0)
 
 fout = ROOT.TFile(foutName, 'recreate')
 tree = ROOT.TTree("limit", "limit tree")
