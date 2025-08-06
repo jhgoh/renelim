@@ -5,7 +5,7 @@ import subprocess
 import numpy as np
 
 runScriptName = 'run_chi2.sbatch'
-nToys = 10000
+nToys = 1000
 
 n_vals = [1000, 2000, 5000, 10000]
 s_vals = np.concatenate([
