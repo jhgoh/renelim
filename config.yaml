@@ -12,7 +12,8 @@ physics:
     #Pu241: "data/huber.root:g_Pu241"
 
   ## IBD cross section
-  ibd_xsec: "data/ibdxsec.root:g_HighE"
+  #ibd_xsec: "data/ibdxsec.root:g_HighE"
+  ibd_xsec: "data/ibdxsec.root:g_LowE"
 
   ## Oscillation parameters
   oscillation:
