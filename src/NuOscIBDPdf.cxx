@@ -209,7 +209,8 @@ double NuOscIBDPdf::subIntegral(const double e0, const double e1, const double f
   const double int41 =
       a3 * (int41A1 - int41A0) + b2 * (int41B1 - int41B0) + c1 * (int41C1 - int41C0);
 
-  return (intEnv - s13 * int31 - s14 * int41) / dE;
+  const double cq14 = TMath::Sq(1+std::sqrt(1-s14))/4; // cos^4(theta) = ((1 +- sqrt(1-sin^2(2theta)))/2)^2
+  return (intEnv - s13 * cq14 * int31 - s14 * int41) / dE;
 }
 
 double NuOscIBDPdf::evaluate() const {
@@ -218,15 +219,16 @@ double NuOscIBDPdf::evaluate() const {
   if (x <= 0)
     return 0; // safeguard for unphysical energy
 
-  const double sin13 = sin13_->getVal();
-  const double dm31 = dm31_->getVal();
-  const double sinD13 = std::sin(dm31 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
-  const double prob13 = 1 - sin13 * sinD13 * sinD13;
-
   const double sin14 = sin14_->getVal();
   const double dm41 = dm41_->getVal();
   const double sinD14 = std::sin(dm41 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
-  const double prob14 = prob13 - sin14 * sinD14 * sinD14;
+  const double prob14 = 1 - sin14 * sinD14 * sinD14;
+
+  const double sin13 = sin13_->getVal();
+  const double dm31 = dm31_->getVal();
+  const double sinD13 = std::sin(dm31 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
+  const double cq14 = TMath::Sq(1+std::sqrt(1-sin14))/4; // cos^4(theta) = ((1 +- sqrt(1-sin^2(2theta)))/2)^2
+  const double prob13 = prob13 - sin13 * cq14 * sinD13 * sinD13;
 
   double spec = 0;
   for (int i = 0; i < elemFracs_.getSize(); ++i) {
