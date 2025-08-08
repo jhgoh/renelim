@@ -39,6 +39,20 @@ python ./scripts/reno_neos_to_root.py
 cd ..
 ```
 
+## Oscillation probability
+
+The electron antineutrino survival probability used in RENELim includes the
+interference between the third and fourth mass states:
+
+$$
+P_{ee} = 1 - \cos^4\theta_{14}\sin^2 2\theta_{13}\sin^2\left(\frac{1.27\Delta m^2_{31}L}{E}\right)
+        - \sin^2 2\theta_{14}\sin^2\left(\frac{1.27\Delta m^2_{41}L}{E}\right)
+        - \sin^2\theta_{13}\sin^2 2\theta_{14}\sin^2\left(\frac{1.27\Delta m^2_{43}L}{E}\right),
+$$
+
+where $E$ is the neutrino energy in MeV, $L$ is the baseline in metres and
+$\Delta m^2_{ij}$ are the mass splittings in $\text{eV}^2$.
+
 ## Configuration
 The behaviour of RENELim is controlled via `config.yaml`. Detector
 positions, reactor properties and response matrices can be adjusted by
