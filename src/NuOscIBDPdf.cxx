@@ -237,5 +237,5 @@ double NuOscIBDPdf::evaluate() const {
   }
   const double xsec = interpolate(x, ibdXsecX_, ibdXsecY_);
 
-  return spec * xsec * prob14;
+  return spec * xsec * prob13;
 }
