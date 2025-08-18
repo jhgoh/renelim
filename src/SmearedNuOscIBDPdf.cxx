@@ -99,18 +99,18 @@ double SmearedNuOscIBDPdf::evaluate() const {
   }
 
   double sumW = 0;
-  for (int j = 0, nn = binsT_.size() - 1; j < nn; ++j) {
-    const double e0 = binsT_[j], e1 = binsT_[j + 1];
+  for (int i = 0, nn = static_cast<int>(binsT_.size()) - 1; i < nn; ++i) {
+    const double e0 = binsT_[i], e1 = binsT_[i + 1];
 
     double f0 = 0, f1 = 0;
-    for (int j = 0; j < elemFracs.size(); ++j) {
+    for (size_t j = 0; j < elemFracs.size(); ++j) {
       f0 += elemFracs[j] * interpolate(e0, elemSpectsX_[j], elemSpectsY_[j]);
       f1 += elemFracs[j] * interpolate(e1, elemSpectsX_[j], elemSpectsY_[j]);
     }
     const double s0 = interpolate(e0, ibdXsecX_, ibdXsecY_);
     const double s1 = interpolate(e1, ibdXsecX_, ibdXsecY_);
 
-    sumW += respMat_(idx, j) * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
+    sumW += respMat_(idx, i) * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
   }
 
   return sumW;
