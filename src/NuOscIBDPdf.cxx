@@ -228,7 +228,7 @@ double NuOscIBDPdf::evaluate() const {
   const double dm31 = dm31_->getVal();
   const double sinD13 = std::sin(dm31 * 1.27 * l / x); // 1.27 = 1/(4\hbar c)
   const double cq14 = TMath::Sq(1+std::sqrt(1-sin14))/4; // cos^4(theta) = ((1 +- sqrt(1-sin^2(2theta)))/2)^2
-  const double prob13 = prob13 - sin13 * cq14 * sinD13 * sinD13;
+  const double prob13 = prob14 - sin13 * cq14 * sinD13 * sinD13;
 
   double spec = 0;
   for (int i = 0; i < elemFracs_.getSize(); ++i) {

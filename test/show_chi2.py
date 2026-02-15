@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import sys
-from glob import glob
-from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -12,6 +10,24 @@ chain = ROOT.TChain("limit")
 chain.Add("results/result_*_nSignal_1000.root")
 #chain.Draw("nll:sin14", "", "COLZ")
 
+## Basic sanity check
+cols = [
+  "dm41", "sin14",
+  "nll", "pNull", "pAlt",
+  "edm", "status", "covQual",
+  "time",
+]
+colsInTree = []
+for row in chain:
+  for leaf in row.GetListOfLeaves():
+    colsInTree.append(leaf.GetName())
+  break
+if set(cols) != set(colsInTree):
+  print("!!! Missing/Redundant columns in the input TTree")
+  print("    Columns in TTree:", colsInTree)
+  print("    Columns expected:", cols)
+
+"""
 df = pd.DataFrame(pars)
 print(df)
 
@@ -40,3 +56,4 @@ c.SetLogy()
 #h2.Draw("CONT Z LIST")
 h2.Draw("CONT5 Z LIST")
 c.Update()
+"""
