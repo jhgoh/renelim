@@ -24,28 +24,6 @@
 
 ClassImp(BinnedNuOscIBDPdf);
 
-// ---------------------------------------------------------------------------
-// Internal helpers for building vector<double> from TGraph (same as NuOscIBDPdf.cxx)
-// ---------------------------------------------------------------------------
-static std::vector<double> xFromGraph(const TGraph *g) {
-  if (!g) return {0.0, 1.0};
-  return std::vector<double>(g->GetX(), g->GetX() + g->GetN());
-}
-static std::vector<double> yFromGraph(const TGraph *g) {
-  if (!g) return {0.0, 0.0};
-  return std::vector<double>(g->GetY(), g->GetY() + g->GetN());
-}
-static std::vector<std::vector<double>> xFromGraphs(const std::vector<const TGraph *> &gs) {
-  std::vector<std::vector<double>> r;
-  for (auto g : gs) r.push_back(xFromGraph(g));
-  return r;
-}
-static std::vector<std::vector<double>> yFromGraphs(const std::vector<const TGraph *> &gs) {
-  std::vector<std::vector<double>> r;
-  for (auto g : gs) r.push_back(yFromGraph(g));
-  return r;
-}
-
 BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &xr,
                                        RooAbsReal &xInt, RooAbsReal &l, RooAbsReal &sin13,
                                        RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
