@@ -8,6 +8,8 @@
 #include "RooCategoryProxy.h"
 #include "RooRealProxy.h"
 
+class TGraph;
+
 class NuOscIBDPdf : public RooAbsPdf {
 public:
   /**
@@ -29,6 +31,9 @@ public:
               const std::vector<std::vector<double>> &elemSpectsX,
               const std::vector<std::vector<double>> &elemSpectsY,
               const std::vector<double> &ibdXsecX, const std::vector<double> &ibdXsecY);
+  NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l, RooAbsReal &sin13,
+              RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41, const RooArgList &elemFracs,
+              const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec);
   NuOscIBDPdf(const NuOscIBDPdf &other, const char *name = 0);
   virtual TObject *clone(const char *newname) const override {
     return new NuOscIBDPdf(*this, newname);

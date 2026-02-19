@@ -6,10 +6,33 @@
 // #include <math.h>
 #include "Math/SpecFunc.h"
 #include "TMath.h"
+#include "TGraph.h"
 
 #include <algorithm>
 
 ClassImp(NuOscIBDPdf);
+
+// ---------------------------------------------------------------------------
+// Internal helpers for building vector<double> from TGraph
+// ---------------------------------------------------------------------------
+static std::vector<double> xFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 1.0};
+  return std::vector<double>(g->GetX(), g->GetX() + g->GetN());
+}
+static std::vector<double> yFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 0.0};
+  return std::vector<double>(g->GetY(), g->GetY() + g->GetN());
+}
+static std::vector<std::vector<double>> xFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(xFromGraph(g));
+  return r;
+}
+static std::vector<std::vector<double>> yFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(yFromGraph(g));
+  return r;
+}
 
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,
                          RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
@@ -41,6 +64,14 @@ NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, Roo
       xEdges_.push_back(x);
   }
 }
+
+NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,
+                         RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
+                         const RooArgList &elemFracs,
+                         const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec)
+    : NuOscIBDPdf(name, title, x, l, sin13, dm31, sin14, dm41, elemFracs,
+                  xFromGraphs(elemSpects), yFromGraphs(elemSpects),
+                  xFromGraph(grpXsec), yFromGraph(grpXsec)) {}
 
 NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf &other, const char *name)
     : RooAbsPdf(other, name), x_("x", this, other.x_), l_("l", this, other.l_),
