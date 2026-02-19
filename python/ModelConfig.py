@@ -24,7 +24,7 @@ def load_model(config_path="config.yaml", det_idx=0):
     ## Basic ROOT setup and load custom PDF classes
     ###############################################################################
     ROOT.gROOT.ProcessLineSync(".x src/NuOscIBDPdf.cxx+")
-    ROOT.gROOT.ProcessLineSync(".x src/SmearedNuOscIBDPdf.cxx+")
+    ROOT.gROOT.ProcessLineSync(".x src/BinnedNuOscIBDPdf.cxx+")
 
     ws = ROOT.RooWorkspace("ws", "ws")
     config = ConfigRENE(config_path)
@@ -172,7 +172,7 @@ def load_model(config_path="config.yaml", det_idx=0):
     # pdf_EReco.SetName("pdf_EReco")
     # pdf_EReco.SetTitle("PDF of reconstructed energy")
     # fmt: off
-    pdf_EReco = ROOT.SmearedNuOscIBDPdf(
+    pdf_EReco = ROOT.BinnedNuOscIBDPdf(
         "pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
         v_sin13, v_dm31, v_sin14, v_dm41,
         v_elem_fracs, grps_HM, grp_xsec, h_resp

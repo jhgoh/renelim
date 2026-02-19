@@ -13,7 +13,7 @@
 // call using NuOscIBDPdf::subIntegral().
 
 #include "Riostream.h"
-#include "SmearedNuOscIBDPdf.h"
+#include "BinnedNuOscIBDPdf.h"
 #include "RooAbsCategory.h"
 #include "RooAbsReal.h"
 #include "TMath.h"
@@ -21,9 +21,9 @@
 #include "RooRealVar.h"
 #include <algorithm>
 
-ClassImp(SmearedNuOscIBDPdf);
+ClassImp(BinnedNuOscIBDPdf);
 
-SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &xr,
+BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &xr,
                                        RooAbsReal &xInt, RooAbsReal &l, RooAbsReal &sin13,
                                        RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
                                        const RooArgList &elemFracs,
@@ -55,24 +55,24 @@ SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const char *name, const char *title, RooA
   }
 }
 
-SmearedNuOscIBDPdf::SmearedNuOscIBDPdf(const SmearedNuOscIBDPdf &other, const char *name)
+BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name)
     : NuOscIBDPdf(other, name), xr_("xr", this, other.xr_), respMat_(other.respMat_),
       binsT_(other.binsT_), binsR_(other.binsR_) {}
 
-int SmearedNuOscIBDPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
+int BinnedNuOscIBDPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
                                               const char * /*rangeName*/) const {
   if (matchArgs(allVars, analVars, xr_))
     return 1;
   return 0;
 }
 
-double SmearedNuOscIBDPdf::analyticalIntegral(int code, const char *rangeName) const {
+double BinnedNuOscIBDPdf::analyticalIntegral(int code, const char *rangeName) const {
   R__ASSERT(code == 1);
 
   return NuOscIBDPdf::analyticalIntegral(code, rangeName);
 }
 
-double SmearedNuOscIBDPdf::evaluate() const {
+double BinnedNuOscIBDPdf::evaluate() const {
   // Determine the reconstructed-energy bin.
   const double xr = xr_->getVal();
   if (xr < binsR_.front() || xr >= binsR_.back())

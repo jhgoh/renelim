@@ -1,7 +1,7 @@
-#ifndef SmearedNuOscIBDPdf_H
-#define SmearedNuOscIBDPdf_H
+#ifndef BinnedNuOscIBDPdf_H
+#define BinnedNuOscIBDPdf_H
 
-// SmearedNuOscIBDPdf: energy spectrum of sterile neutrinos including detector resolution.
+// BinnedNuOscIBDPdf: energy spectrum of sterile neutrinos including detector resolution.
 //
 // A simple convolution cannot be used here because the detector resolution
 // depends on energy. Instead the smeared spectrum is obtained by multiplying a
@@ -31,19 +31,19 @@
 #include "TMatrixD.h"
 #include <vector>
 
-class SmearedNuOscIBDPdf : public NuOscIBDPdf {
+class BinnedNuOscIBDPdf : public NuOscIBDPdf {
 public:
-  SmearedNuOscIBDPdf() = default;
-  SmearedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &xInt,
+  BinnedNuOscIBDPdf() = default;
+  BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &xInt,
                      RooAbsReal &l, RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14,
                      RooAbsReal &dm41, const RooArgList &elemFracs,
                      const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec,
                      const TH2 *hResp);
-  SmearedNuOscIBDPdf(const SmearedNuOscIBDPdf &other, const char *name = 0);
+  BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name = 0);
   virtual TObject *clone(const char *newname) const override {
-    return new SmearedNuOscIBDPdf(*this, newname);
+    return new BinnedNuOscIBDPdf(*this, newname);
   }
-  inline virtual ~SmearedNuOscIBDPdf() override = default;
+  inline virtual ~BinnedNuOscIBDPdf() override = default;
 
 protected:
   RooRealProxy xr_;                   //!< Reconstructed energy variable
@@ -56,7 +56,7 @@ protected:
   double analyticalIntegral(int code, const char *rangeName = 0) const override;
 
 private:
-  ClassDef(SmearedNuOscIBDPdf, 1) // RooFit class definition
+  ClassDef(BinnedNuOscIBDPdf, 1) // RooFit class definition
 };
 
 #endif
