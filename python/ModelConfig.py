@@ -2,7 +2,7 @@ import sys
 import ROOT
 import numpy as np
 
-from Config import ConfigRENE, getFileAndObj
+from Config import ConfigRENE, getFileAndObj, getGraphFromYaml
 
 
 def load_model(config_path="config.yaml", det_idx=0):
@@ -107,16 +107,13 @@ def load_model(config_path="config.yaml", det_idx=0):
     ## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
     grps_HM = ROOT.std.vector("TGraph")()
     for en in elem_names:
-        _, grp = getFileAndObj(config.get(f"physics.isotope_flux.{en}"))
-        ROOT.gROOT.cd()
-        grps_HM.push_back(grp.Clone())
-        del grp
+        grp = getGraphFromYaml(config.get(f"physics.isotope_flux.{en}"))
+        grps_HM.push_back(grp)
 
     ###############################################################################
     ## IBD cross section
     ###############################################################################
-    _, grp_xsec = getFileAndObj(config.get("physics.ibd_xsec"))
-    ROOT.gROOT.cd()
+    grp_xsec = getGraphFromYaml(config.get("physics.ibd_xsec"))
 
     ################################################################################
     ## Build the Oscillated neutrino energy spectrum
