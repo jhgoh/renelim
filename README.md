@@ -2,12 +2,11 @@
 
 ## Initial setup
 
-Install [conda](https://docs.conda.io) and create the environment:
+Install [mamba](https://mamba.readthedocs.io) (or [conda](https://docs.conda.io)) and create the environment:
 
 ```bash
-conda create -n ds4hep -c conda-forge
-conda activate ds4hep
-conda install root numpy pandas tqdm pyyaml -c conda-forge -y
+mamba create -n hep2026.01 -c conda-forge root numpy pandas tqdm pyyaml -y
+mamba activate hep2026.01
 ```
 
 ### Response matrix
