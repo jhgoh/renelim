@@ -17,19 +17,45 @@
 #include "RooAbsCategory.h"
 #include "RooAbsReal.h"
 #include "TMath.h"
+#include "TGraph.h"
 
 #include "RooRealVar.h"
 #include <algorithm>
 
 ClassImp(BinnedNuOscIBDPdf);
 
+// ---------------------------------------------------------------------------
+// Internal helpers for building vector<double> from TGraph (same as NuOscIBDPdf.cxx)
+// ---------------------------------------------------------------------------
+static std::vector<double> xFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 1.0};
+  return std::vector<double>(g->GetX(), g->GetX() + g->GetN());
+}
+static std::vector<double> yFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 0.0};
+  return std::vector<double>(g->GetY(), g->GetY() + g->GetN());
+}
+static std::vector<std::vector<double>> xFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(xFromGraph(g));
+  return r;
+}
+static std::vector<std::vector<double>> yFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(yFromGraph(g));
+  return r;
+}
+
 BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &xr,
                                        RooAbsReal &xInt, RooAbsReal &l, RooAbsReal &sin13,
                                        RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
                                        const RooArgList &elemFracs,
-                                       const std::vector<const TGraph *> elemSpects,
-                                       const TGraph *grpXsec, const TH2 *hResp)
-    : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs, elemSpects, grpXsec),
+                                       const std::vector<std::vector<double>> &elemSpectsX,
+                                       const std::vector<std::vector<double>> &elemSpectsY,
+                                       const std::vector<double> &ibdXsecX,
+                                       const std::vector<double> &ibdXsecY, const TH2 *hResp)
+    : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs,
+                  elemSpectsX, elemSpectsY, ibdXsecX, ibdXsecY),
       xr_("xr", "xr", this, xr), respMat_(hResp->GetNbinsY() + 1, hResp->GetNbinsX() + 1) {
   // Load the response matrix and normalise each true-energy slice.
   for (int ix = 0; ix <= hResp->GetNbinsX(); ++ix) {
@@ -54,6 +80,16 @@ BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbs
     }
   }
 }
+
+BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &xr,
+                                       RooAbsReal &xInt, RooAbsReal &l, RooAbsReal &sin13,
+                                       RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
+                                       const RooArgList &elemFracs,
+                                       const std::vector<const TGraph *> elemSpects,
+                                       const TGraph *grpXsec, const TH2 *hResp)
+    : BinnedNuOscIBDPdf(name, title, xr, xInt, l, sin13, dm31, sin14, dm41, elemFracs,
+                         xFromGraphs(elemSpects), yFromGraphs(elemSpects),
+                         xFromGraph(grpXsec), yFromGraph(grpXsec), hResp) {}
 
 BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name)
     : NuOscIBDPdf(other, name), xr_("xr", this, other.xr_), respMat_(other.respMat_),

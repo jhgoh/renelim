@@ -3,17 +3,17 @@
 physics:
   ## True energy flux spectra
   isotope_flux:
-    U235: "data/mueller.root:g_U235"
-    U238: "data/mueller.root:g_U238"
-    Pu239: "data/mueller.root:g_Pu239"
-    Pu241: "data/mueller.root:g_Pu241"
-    #U245: "data/huber.root:g_U245"
-    #Pu239: "data/huber.root:g_Pu239"
-    #Pu241: "data/huber.root:g_Pu241"
+    U235: "data/mueller.yaml:U235"
+    U238: "data/mueller.yaml:U238"
+    Pu239: "data/mueller.yaml:Pu239"
+    Pu241: "data/mueller.yaml:Pu241"
+    #U235: "data/huber.yaml:U235"
+    #Pu239: "data/huber.yaml:Pu239"
+    #Pu241: "data/huber.yaml:Pu241"
 
   ## IBD cross section
-  #ibd_xsec: "data/ibdxsec.root:g_HighE"
-  ibd_xsec: "data/ibdxsec.root:g_LowE"
+  #ibd_xsec: "data/ibdxsec.yaml:high_E"
+  ibd_xsec: "data/ibdxsec.yaml:low_E"
 
   ## Oscillation parameters
   oscillation:

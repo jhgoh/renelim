@@ -8,6 +8,8 @@
 #include "RooCategoryProxy.h"
 #include "RooRealProxy.h"
 
+class TGraph;
+
 class NuOscIBDPdf : public RooAbsPdf {
 public:
   /**
@@ -24,6 +26,11 @@ public:
    * @param grpXsec    IBD cross-section curve.
    */
   NuOscIBDPdf() = default;
+  NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l, RooAbsReal &sin13,
+              RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41, const RooArgList &elemFracs,
+              const std::vector<std::vector<double>> &elemSpectsX,
+              const std::vector<std::vector<double>> &elemSpectsY,
+              const std::vector<double> &ibdXsecX, const std::vector<double> &ibdXsecY);
   NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l, RooAbsReal &sin13,
               RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41, const RooArgList &elemFracs,
               const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec);
@@ -48,7 +55,6 @@ protected:
                             const char *rangeName = 0) const override;
   double analyticalIntegral(int code, const char *rangeName = 0) const override;
 
-  void loadFromTGraph(const TGraph *grp, std::vector<double> &xx, std::vector<double> &yy);
   double interpolate(const double x, const std::vector<double> &xx,
                      const std::vector<double> &yy) const;
   double subIntegral(const double e0, const double e1, const double f0, const double f1,

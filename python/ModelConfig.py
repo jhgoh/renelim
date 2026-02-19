@@ -2,7 +2,7 @@ import sys
 import ROOT
 import numpy as np
 
-from Config import ConfigRENE, getFileAndObj
+from Config import ConfigRENE, getFileAndObj, loadYamlData
 
 
 def load_model(config_path="config.yaml", det_idx=0):
@@ -105,18 +105,19 @@ def load_model(config_path="config.yaml", det_idx=0):
     v_elem_fracs.add(ws.function(f"v_{elem_names[-1]}"))
 
     ## Load the Neutrino flux model, such as Huber-Mueller, incorporating the fuel compositions
-    grps_HM = ROOT.std.vector("TGraph")()
+    spects_x = ROOT.std.vector(ROOT.std.vector("double"))()
+    spects_y = ROOT.std.vector(ROOT.std.vector("double"))()
     for en in elem_names:
-        _, grp = getFileAndObj(config.get(f"physics.isotope_flux.{en}"))
-        ROOT.gROOT.cd()
-        grps_HM.push_back(grp.Clone())
-        del grp
+        x, y = loadYamlData(config.get(f"physics.isotope_flux.{en}"))
+        spects_x.push_back(ROOT.std.vector("double")(x.tolist()))
+        spects_y.push_back(ROOT.std.vector("double")(y.tolist()))
 
     ###############################################################################
     ## IBD cross section
     ###############################################################################
-    _, grp_xsec = getFileAndObj(config.get("physics.ibd_xsec"))
-    ROOT.gROOT.cd()
+    xsec_x, xsec_y = loadYamlData(config.get("physics.ibd_xsec"))
+    xsec_x_vec = ROOT.std.vector("double")(xsec_x.tolist())
+    xsec_y_vec = ROOT.std.vector("double")(xsec_y.tolist())
 
     ################################################################################
     ## Build the Oscillated neutrino energy spectrum
@@ -139,7 +140,8 @@ def load_model(config_path="config.yaml", det_idx=0):
     v_L.setConstant(True)
 
     pdf_ENu = ROOT.NuOscIBDPdf(
-        "pdf_ENu", "pdf_ENu", v_ENu, v_L, v_sin13, v_dm31, v_sin14, v_dm41, v_elem_fracs, grps_HM, grp_xsec
+        "pdf_ENu", "pdf_ENu", v_ENu, v_L, v_sin13, v_dm31, v_sin14, v_dm41,
+        v_elem_fracs, spects_x, spects_y, xsec_x_vec, xsec_y_vec
     )
     ws.Import(pdf_ENu)
     pdf_ENu = ws.pdf("pdf_ENu")
@@ -175,7 +177,7 @@ def load_model(config_path="config.yaml", det_idx=0):
     pdf_EReco = ROOT.BinnedNuOscIBDPdf(
         "pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
         v_sin13, v_dm31, v_sin14, v_dm41,
-        v_elem_fracs, grps_HM, grp_xsec, h_resp
+        v_elem_fracs, spects_x, spects_y, xsec_x_vec, xsec_y_vec, h_resp
     )
     # fmt: on
     ws.Import(pdf_EReco)

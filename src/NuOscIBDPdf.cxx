@@ -6,30 +6,48 @@
 // #include <math.h>
 #include "Math/SpecFunc.h"
 #include "TMath.h"
+#include "TGraph.h"
 
 #include <algorithm>
 
 ClassImp(NuOscIBDPdf);
 
+// ---------------------------------------------------------------------------
+// Internal helpers for building vector<double> from TGraph
+// ---------------------------------------------------------------------------
+static std::vector<double> xFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 1.0};
+  return std::vector<double>(g->GetX(), g->GetX() + g->GetN());
+}
+static std::vector<double> yFromGraph(const TGraph *g) {
+  if (!g) return {0.0, 0.0};
+  return std::vector<double>(g->GetY(), g->GetY() + g->GetN());
+}
+static std::vector<std::vector<double>> xFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(xFromGraph(g));
+  return r;
+}
+static std::vector<std::vector<double>> yFromGraphs(const std::vector<const TGraph *> &gs) {
+  std::vector<std::vector<double>> r;
+  for (auto g : gs) r.push_back(yFromGraph(g));
+  return r;
+}
+
 NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,
                          RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
-                         const RooArgList &elemFracs, const std::vector<const TGraph *> elemSpects,
-                         const TGraph *grpXsec)
+                         const RooArgList &elemFracs,
+                         const std::vector<std::vector<double>> &elemSpectsX,
+                         const std::vector<std::vector<double>> &elemSpectsY,
+                         const std::vector<double> &ibdXsecX, const std::vector<double> &ibdXsecY)
     : RooAbsPdf(name, title), x_("x", "x", this, x), l_("l", "l", this, l),
       sin13_("sin13", "sin13", this, sin13), dm31_("dm31", "dm31", this, dm31),
-      sin14_("sin14", "sin14", this, sin14), dm41_("dm41", "dm41", this, dm41) {
-  assert(elemFracs.getSize() == elemSpects.size());
+      sin14_("sin14", "sin14", this, sin14), dm41_("dm41", "dm41", this, dm41),
+      elemSpectsX_(elemSpectsX), elemSpectsY_(elemSpectsY),
+      ibdXsecX_(ibdXsecX), ibdXsecY_(ibdXsecY) {
+  assert(elemFracs.getSize() == (int)elemSpectsX.size());
+  assert(elemSpectsX.size() == elemSpectsY.size());
   elemFracs_.add(elemFracs);
-
-  // Load neutrino energy spectra for each fuel component.
-  for (int i = 0; i < elemFracs_.getSize(); ++i) {
-    elemSpectsX_.push_back({});
-    elemSpectsY_.push_back({});
-    loadFromTGraph(elemSpects[i], elemSpectsX_[i], elemSpectsY_[i]);
-  }
-
-  // Load the IBD cross-section curve.
-  loadFromTGraph(grpXsec, ibdXsecX_, ibdXsecY_);
 
   // Build a unified set of energy bin edges from all spectra and the cross section.
   std::vector<double> allEdges;
@@ -47,6 +65,14 @@ NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, Roo
   }
 }
 
+NuOscIBDPdf::NuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &l,
+                         RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
+                         const RooArgList &elemFracs,
+                         const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec)
+    : NuOscIBDPdf(name, title, x, l, sin13, dm31, sin14, dm41, elemFracs,
+                  xFromGraphs(elemSpects), yFromGraphs(elemSpects),
+                  xFromGraph(grpXsec), yFromGraph(grpXsec)) {}
+
 NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf &other, const char *name)
     : RooAbsPdf(other, name), x_("x", this, other.x_), l_("l", this, other.l_),
       sin13_("sin13", this, other.sin13_), dm31_("dm31", this, other.dm31_),
@@ -54,23 +80,6 @@ NuOscIBDPdf::NuOscIBDPdf(const NuOscIBDPdf &other, const char *name)
       elemSpectsX_(other.elemSpectsX_), elemSpectsY_(other.elemSpectsY_),
       ibdXsecX_(other.ibdXsecX_), ibdXsecY_(other.ibdXsecY_), xEdges_(other.xEdges_) {
   elemFracs_.add(other.elemFracs_);
-}
-
-void NuOscIBDPdf::loadFromTGraph(const TGraph *grp, std::vector<double> &xx,
-                                 std::vector<double> &yy) {
-  if (!grp) {
-    xx = {{0, 1}};
-    yy = {{0, 0}};
-    return;
-  }
-
-  xx.clear();
-  yy.clear();
-
-  for (int i = 0, n = grp->GetN(); i < n; ++i) {
-    xx.push_back(grp->GetX()[i]);
-    yy.push_back(grp->GetY()[i]);
-  }
 }
 
 double NuOscIBDPdf::interpolate(const double x, const std::vector<double> &xx,
