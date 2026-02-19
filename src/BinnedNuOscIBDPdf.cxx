@@ -27,9 +27,12 @@ BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbs
                                        RooAbsReal &xInt, RooAbsReal &l, RooAbsReal &sin13,
                                        RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
                                        const RooArgList &elemFracs,
-                                       const std::vector<const TGraph *> elemSpects,
-                                       const TGraph *grpXsec, const TH2 *hResp)
-    : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs, elemSpects, grpXsec),
+                                       const std::vector<std::vector<double>> &elemSpectsX,
+                                       const std::vector<std::vector<double>> &elemSpectsY,
+                                       const std::vector<double> &ibdXsecX,
+                                       const std::vector<double> &ibdXsecY, const TH2 *hResp)
+    : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs,
+                  elemSpectsX, elemSpectsY, ibdXsecX, ibdXsecY),
       xr_("xr", "xr", this, xr), respMat_(hResp->GetNbinsY() + 1, hResp->GetNbinsX() + 1) {
   // Load the response matrix and normalise each true-energy slice.
   for (int ix = 0; ix <= hResp->GetNbinsX(); ++ix) {

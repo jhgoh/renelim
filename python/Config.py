@@ -104,12 +104,12 @@ def getFileAndObj(path):
     return f, h
 
 
-def getGraphFromYaml(path_spec):
-    """Return a TGraph built from a YAML data file.
+def loadYamlData(path_spec):
+    """Return (x, y) numpy arrays from a YAML data file.
 
     ``path_spec`` has the form ``"path/to/file.yaml:name"``, where
     ``name`` selects the entry by ``data[].name``.
-    The y-axis is taken from the first field that is not ``name``,
+    The y values are taken from the first field that is not ``name``,
     ``energy``, or ``error``.
     """
     parts = path_spec.split(":", 1)
@@ -129,9 +129,7 @@ def getGraphFromYaml(path_spec):
     y_key = next(k for k in entry if k not in ("name", "energy", "error"))
     y = np.array(entry[y_key], dtype=float)
 
-    grp = ROOT.TGraph(len(x), x, y)
-    grp.SetName(entry.get("name", "graph"))
-    return grp
+    return x, y
 
 
 if __name__ == "__main__":

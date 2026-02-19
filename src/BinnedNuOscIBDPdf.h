@@ -37,7 +37,9 @@ public:
   BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &xInt,
                      RooAbsReal &l, RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14,
                      RooAbsReal &dm41, const RooArgList &elemFracs,
-                     const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec,
+                     const std::vector<std::vector<double>> &elemSpectsX,
+                     const std::vector<std::vector<double>> &elemSpectsY,
+                     const std::vector<double> &ibdXsecX, const std::vector<double> &ibdXsecY,
                      const TH2 *hResp);
   BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name = 0);
   virtual TObject *clone(const char *newname) const override {
