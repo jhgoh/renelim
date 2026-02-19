@@ -157,7 +157,7 @@ v_dm41.setConstant(True)
 mcAlt.SetSnapshot(vs_poi)
 
 ## Calculate the likelihood
-nll = model.createNLL(asimovData, ROOT.RooFit.Constrain(constrs)) 
+nll = model.createNLL(asimovData, ROOT.RooFit.ExternalConstraints(constrs))
 
 minimizer = ROOT.RooMinuit(nll)
 minimizer.setStrategy(2)
