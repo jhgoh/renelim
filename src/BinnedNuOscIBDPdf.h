@@ -59,13 +59,19 @@ protected:
 
   std::vector<double> ls_, lws_;      //!< Bin centers and weights of baseline
 
+  // Cache of baseline-smeared true-energy integrals for the current parameters.
+  mutable std::vector<double> trueBinCache_;
+  mutable bool cacheValid_{false};
+  mutable double cacheSin13_{0}, cacheDm31_{0}, cacheSin14_{0}, cacheDm41_{0};
+  mutable std::vector<double> cacheElemFracs_;
+
   double evaluate() const override;
   int getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
                             const char *rangeName = 0) const override;
   double analyticalIntegral(int code, const char *rangeName = 0) const override;
 
 private:
-  ClassDef(BinnedNuOscIBDPdf, 1) // RooFit class definition
+  ClassDef(BinnedNuOscIBDPdf, 2) // RooFit class definition
 };
 
 #endif
