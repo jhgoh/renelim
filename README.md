@@ -39,6 +39,12 @@ mamba create -n hep2026.01 -c conda-forge root numpy pandas scipy tqdm pyyaml -y
 mamba activate hep2026.01
 ```
 
+### ROOT runtime notes
+
+- The scripts in `test/` compile and load C++ classes from `src/` through PyROOT.
+- Run commands from the repository root (`/workspace/renelim`) so relative paths like
+  `python/`, `data/`, and `config.yaml` are resolved correctly.
+
 ## Typical analysis workflow
 
 ### 1. Generate the response matrix
@@ -52,10 +58,10 @@ python scripts/response_gaus.py
 
 This produces `data/response_gaus.root` used by the default `config.yaml`.
 
-### 2. (Optional) Generate the baseline distribution
+### 2. Generate the baseline distribution
 
 To account for the finite sizes of the reactor core and the detector volume,
-a baseline smearing histogram can be produced with:
+generate the baseline smearing histogram with:
 
 ```bash
 python scripts/baseline_smearing.py
@@ -69,22 +75,7 @@ Edit `config.yaml` to match your setup. The file has three main sections:
 - **`detectors`** – position, efficiency, number of target protons, response matrix
 - **`reactors`** – Hanbit units 1–6 positions and thermal powers
 
-### 4. Run the NLL scan
-
-```bash
-python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
-```
-
-### 5. Visualise results
-
-```bash
-python test/show_chi2.py
-```
-
-This draws the expected exclusion limits together with 3σ and 5σ contours
-from the ROOT files matching `results/result_*_nSignal_1000.root`.
-
-### 6. Inspect the energy spectrum
+### 4. Inspect the energy spectrum
 
 ```bash
 python test/show_energy_spectrum.py
@@ -92,6 +83,28 @@ python test/show_energy_spectrum.py
 
 Compiles the required ROOT classes on the fly and opens several canvases
 displaying the detector-smeared spectrum. Press `Enter` to close them.
+
+### 5. Run the NLL scan
+
+```bash
+mkdir -p results
+python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
+```
+
+Useful options:
+
+- `-s/--sin14`: comma-separated custom scan points, e.g. `-s 0,0.001,0.01,0.1`
+- `--seed`: random seed for reproducible toy studies
+- `-g/--gui`: display ROOT canvases while running
+
+### 6. Visualise results
+
+```bash
+python test/show_chi2.py
+```
+
+This draws the expected exclusion limits together with 3σ and 5σ contours
+from the ROOT files matching `results/result_*_nSignal_1000.root`.
 
 ### 7. Batch grid scan
 
@@ -106,6 +119,14 @@ This creates the `results/` directory and dispatches jobs defined in
 `test/run_chi2.sbatch`.
 
 ## Configuration
+
+The default `config.yaml` assumes:
+
+- Hanbit units 1–6 as reactor sources
+- one near detector with a Gaussian response matrix in `data/response_gaus.root`
+- neutrino flux/cross-section tables in `data/*.yaml`
+
+Before long production runs, verify file paths and detector/reactor coordinates in `config.yaml`.
 
 ### Physics inputs
 
