@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 ## Build a response matrix, E_neutrino vs E_positron
-## This is not conventional, but I think it is worth to split
-## kinematics of IBD from the detector effect
 import argparse
 import os
 
