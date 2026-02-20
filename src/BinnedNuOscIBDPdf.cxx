@@ -87,7 +87,11 @@ BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbs
 BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name)
     : NuOscIBDPdf(other, name), xr_("xr", this, other.xr_), respMat_(other.respMat_),
       binsT_(other.binsT_), binsR_(other.binsR_),
-      ls_(other.ls_), lws_(other.lws_) {}
+      ls_(other.ls_), lws_(other.lws_),
+      trueBinCache_(other.trueBinCache_), cacheValid_(other.cacheValid_),
+      cacheSin13_(other.cacheSin13_), cacheDm31_(other.cacheDm31_),
+      cacheSin14_(other.cacheSin14_), cacheDm41_(other.cacheDm41_),
+      cacheElemFracs_(other.cacheElemFracs_) {}
 
 int BinnedNuOscIBDPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
                                               const char * /*rangeName*/) const {
@@ -118,35 +122,58 @@ double BinnedNuOscIBDPdf::evaluate() const {
   const double dm41 = dm41_->getVal();
 
   std::vector<double> elemFracs;
+  elemFracs.reserve(elemFracs_.getSize());
   for (int iF = 0; iF < elemFracs_.getSize(); ++iF) {
     const RooAbsReal &elemFrac = static_cast<const RooAbsReal &>(elemFracs_[iF]);
     elemFracs.push_back(elemFrac.getVal());
   }
 
-  double sumW = 0;
-  for ( size_t iL = 0; iL < ls_.size(); ++iL ) {
-    const double l = ls_[iL];
-    const double lw = lws_[iL];
+  const bool paramsChanged = !cacheValid_ || cacheSin13_ != sin13 || cacheDm31_ != dm31 ||
+                             cacheSin14_ != sin14 || cacheDm41_ != dm41 ||
+                             cacheElemFracs_.size() != elemFracs.size() ||
+                             !std::equal(cacheElemFracs_.begin(), cacheElemFracs_.end(), elemFracs.begin());
 
-    const double k31 = 1.27 * dm31 * l;
-    const double k41 = 1.27 * dm41 * l;
+  if (paramsChanged) {
+    const int nE = static_cast<int>(binsT_.size()) - 1;
+    trueBinCache_.assign(nE, 0.0);
 
-    double sumWL = 0;
-    for (int iE = 0, nE = static_cast<int>(binsT_.size()) - 1; iE < nE; ++iE) {
-      const double e0 = binsT_[iE], e1 = binsT_[iE + 1];
-      const double s0 = interpolate(e0, ibdXsecX_, ibdXsecY_);
-      const double s1 = interpolate(e1, ibdXsecX_, ibdXsecY_);
+    for (size_t iL = 0; iL < ls_.size(); ++iL) {
+      const double l = ls_[iL];
+      const double lw = lws_[iL];
 
-      double f0 = 0, f1 = 0;
-      for (size_t iF = 0; iF < elemFracs.size(); ++iF) {
-        f0 += elemFracs[iF] * interpolate(e0, elemSpectsX_[iF], elemSpectsY_[iF]);
-        f1 += elemFracs[iF] * interpolate(e1, elemSpectsX_[iF], elemSpectsY_[iF]);
+      const double k31 = 1.27 * dm31 * l;
+      const double k41 = 1.27 * dm41 * l;
+
+      for (int iE = 0; iE < nE; ++iE) {
+        const double e0 = binsT_[iE], e1 = binsT_[iE + 1];
+        const double s0 = interpolate(e0, ibdXsecX_, ibdXsecY_);
+        const double s1 = interpolate(e1, ibdXsecX_, ibdXsecY_);
+
+        double f0 = 0, f1 = 0;
+        for (size_t iF = 0; iF < elemFracs.size(); ++iF) {
+          f0 += elemFracs[iF] * interpolate(e0, elemSpectsX_[iF], elemSpectsY_[iF]);
+          f1 += elemFracs[iF] * interpolate(e1, elemSpectsX_[iF], elemSpectsY_[iF]);
+        }
+
+        trueBinCache_[iE] += lw * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
       }
-
-      sumWL += respMat_(idx, iE) * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
     }
-    sumW += lw*sumWL;
+
+    cacheSin13_ = sin13;
+    cacheDm31_ = dm31;
+    cacheSin14_ = sin14;
+    cacheDm41_ = dm41;
+    cacheElemFracs_ = elemFracs;
+    cacheValid_ = true;
   }
 
-  return sumW;
+  double sum = 0;
+  for (int iE = 0, nE = static_cast<int>(binsT_.size()) - 1; iE < nE; ++iE) {
+    const double resp = respMat_(idx, iE);
+    if (resp == 0)
+      continue;
+    sum += resp * trueBinCache_[iE];
+  }
+
+  return sum;
 }
