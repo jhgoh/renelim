@@ -52,19 +52,6 @@ python scripts/response_gaus.py
 
 This produces `data/response_gaus.root` used by the default `config.yaml`.
 
-Optional arguments control the energy resolution model
-$\sigma(E) = \sqrt{a^2 E + b^2 E^2 + c^2}$:
-
-| Option | Default | Description |
-|---|---|---|
-| `--a` | 0.06 | Stochastic term |
-| `--b` | 0.01 | Proportional term |
-| `--c` | 0.0005 | Constant term |
-| `--xmin` / `--xmax` | 0.0 / 10.0 MeV | Energy range |
-| `--dx` | 0.1 MeV | Bin width |
-| `-o` | `response_gaus.root` | Output file |
-| `-g` | — | Open a ROOT canvas to inspect the matrix |
-
 ### 2. (Optional) Generate the baseline distribution
 
 To account for the finite sizes of the reactor core and the detector volume,
@@ -73,18 +60,6 @@ a baseline smearing histogram can be produced with:
 ```bash
 python scripts/baseline_smearing.py
 ```
-
-Key options:
-
-| Option | Default | Description |
-|---|---|---|
-| `--core-height` | 3.8 m | Reactor core height |
-| `--core-radius` | 1.75 m | Reactor core radius |
-| `--det-length` | 1.2 m | Detector length |
-| `--det-radius` | 0.267 m | Detector radius |
-| `--det-orientation` | `horizontal` | `vertical` or `horizontal` |
-| `-n` | 10 000 000 | Number of MC samples |
-| `-o` | `baseline.root` | Output file |
 
 ### 3. Configure
 
@@ -99,15 +74,6 @@ Edit `config.yaml` to match your setup. The file has three main sections:
 ```bash
 python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
 ```
-
-| Option | Description |
-|---|---|
-| `-m`, `--dm41` | $\Delta m^2_{41}$ value (eV²) |
-| `-n`, `--nsignal` | Expected number of signal events |
-| `-s`, `--sin14` | Comma-separated $\sin^2 2\theta_{14}$ values to scan (default: automatic grid) |
-| `--toys` | Number of toy MC samples for p-value estimation |
-| `--seed` | Random number seed |
-| `-o` | Output ROOT file |
 
 ### 5. Visualise results
 
