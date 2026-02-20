@@ -36,11 +36,9 @@ def load_model(config_path="config.yaml", det_idx=0):
     ###############################################################################
     det_names = config.getDetectors("name")
     responses = config.getDetectors("response")
-    baselines = [config.getBaselines(name) for name in det_names]
 
     det_name = det_names[det_idx]
     det_response = responses[det_idx]
-    baseline_list = baselines[det_idx]
 
     f_resp = None
     h_resp = None
@@ -61,8 +59,19 @@ def load_model(config_path="config.yaml", det_idx=0):
     else:
         raise ValueError("detectors[].response has to be string or list")
 
+    ###############################################################################
+    ## Reactor information (or baseline information)
+    ## We take only one core for this version.
+    ###############################################################################
+    baselines = [config.getBaselines(name) for name in det_names]
+    baseline_list = baselines[det_idx]
+
     reactor_idx = np.argmin(baseline_list)
-    baseline = baseline_list[reactor_idx]
+    #baseline = baseline_list[reactor_idx]
+    phy_baseline = config.get("physics.baseline")
+    f_baseline, h_baseline = getFileAndObj(phy_baseline) 
+    ROOT.gROOT.cd()
+    baseline = h_baseline.GetMean()
 
     ###############################################################################
     ## Important parameters of interests
@@ -177,7 +186,8 @@ def load_model(config_path="config.yaml", det_idx=0):
     pdf_EReco = ROOT.BinnedNuOscIBDPdf(
         "pdf_EReco", "pdf_EReco", v_EReco, v_ENu, v_L,
         v_sin13, v_dm31, v_sin14, v_dm41,
-        v_elem_fracs, spects_x, spects_y, xsec_x_vec, xsec_y_vec, h_resp
+        v_elem_fracs, spects_x, spects_y, xsec_x_vec, xsec_y_vec,
+        h_baseline, h_resp
     )
     # fmt: on
     ws.Import(pdf_EReco)

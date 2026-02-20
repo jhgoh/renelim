@@ -40,12 +40,12 @@ public:
                      const std::vector<std::vector<double>> &elemSpectsX,
                      const std::vector<std::vector<double>> &elemSpectsY,
                      const std::vector<double> &ibdXsecX, const std::vector<double> &ibdXsecY,
-                     const TH2 *hResp);
+                     const TH1* hBaseline, const TH2 *hResp);
   BinnedNuOscIBDPdf(const char *name, const char *title, RooAbsReal &x, RooAbsReal &xInt,
                      RooAbsReal &l, RooAbsReal &sin13, RooAbsReal &dm31, RooAbsReal &sin14,
                      RooAbsReal &dm41, const RooArgList &elemFracs,
                      const std::vector<const TGraph *> elemSpects, const TGraph *grpXsec,
-                     const TH2 *hResp);
+                     const TH1* hBaseline, const TH2 *hResp);
   BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name = 0);
   virtual TObject *clone(const char *newname) const override {
     return new BinnedNuOscIBDPdf(*this, newname);
@@ -56,6 +56,8 @@ protected:
   RooRealProxy xr_;                   //!< Reconstructed energy variable
   TMatrixD respMat_;                  //!< Normalised response matrix
   std::vector<double> binsT_, binsR_; //!< Bin edges in true and reconstructed energy
+
+  std::vector<double> ls_, lws_;      //!< Bin centers and weights of baseline
 
   double evaluate() const override;
   int getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,

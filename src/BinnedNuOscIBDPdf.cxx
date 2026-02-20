@@ -31,10 +31,25 @@ BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbs
                                        const std::vector<std::vector<double>> &elemSpectsX,
                                        const std::vector<std::vector<double>> &elemSpectsY,
                                        const std::vector<double> &ibdXsecX,
-                                       const std::vector<double> &ibdXsecY, const TH2 *hResp)
+                                       const std::vector<double> &ibdXsecY,
+                                       const TH1* hBaseline, const TH2 *hResp)
     : NuOscIBDPdf(name, title, xInt, l, sin13, dm31, sin14, dm41, elemFracs,
                   elemSpectsX, elemSpectsY, ibdXsecX, ibdXsecY),
       xr_("xr", "xr", this, xr), respMat_(hResp->GetNbinsY() + 1, hResp->GetNbinsX() + 1) {
+  // Load the baseline smearing kernel
+  //l_->setVal(hBaseline->GetMean());
+  for (int ix = 1; ix <= hBaseline->GetNbinsX(); ++ix ) {
+    const double lw = hBaseline->GetBinContent(ix);
+    if ( lw == 0 ) {
+      if ( lws_.empty() )
+        continue; // left-strip, skip empty entries front
+      else
+        break; // right-strip, skip empty entries back - caveat: ignoring tails
+    }
+    ls_.push_back(hBaseline->GetXaxis()->GetBinCenter(ix));
+    lws_.push_back(hBaseline->GetBinContent(ix));
+  }
+
   // Load the response matrix and normalise each true-energy slice.
   for (int ix = 0; ix <= hResp->GetNbinsX(); ++ix) {
     binsT_.push_back(hResp->GetXaxis()->GetBinLowEdge(ix + 1));
@@ -64,14 +79,15 @@ BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const char *name, const char *title, RooAbs
                                        RooAbsReal &dm31, RooAbsReal &sin14, RooAbsReal &dm41,
                                        const RooArgList &elemFracs,
                                        const std::vector<const TGraph *> elemSpects,
-                                       const TGraph *grpXsec, const TH2 *hResp)
+                                       const TGraph *grpXsec, const TH1* hBaseline, const TH2 *hResp)
     : BinnedNuOscIBDPdf(name, title, xr, xInt, l, sin13, dm31, sin14, dm41, elemFracs,
                          xFromGraphs(elemSpects), yFromGraphs(elemSpects),
-                         xFromGraph(grpXsec), yFromGraph(grpXsec), hResp) {}
+                         xFromGraph(grpXsec), yFromGraph(grpXsec), hBaseline, hResp) {}
 
 BinnedNuOscIBDPdf::BinnedNuOscIBDPdf(const BinnedNuOscIBDPdf &other, const char *name)
     : NuOscIBDPdf(other, name), xr_("xr", this, other.xr_), respMat_(other.respMat_),
-      binsT_(other.binsT_), binsR_(other.binsR_) {}
+      binsT_(other.binsT_), binsR_(other.binsR_),
+      ls_(other.ls_), lws_(other.lws_) {}
 
 int BinnedNuOscIBDPdf::getAnalyticalIntegral(RooArgSet &allVars, RooArgSet &analVars,
                                               const char * /*rangeName*/) const {
@@ -96,35 +112,40 @@ double BinnedNuOscIBDPdf::evaluate() const {
   const size_t idx = std::distance(binsR_.begin(), itr) - 1;
 
   // Compute the smeared, binned energy distribution.
-  const double l = l_->getVal();
-
   const double sin13 = sin13_->getVal();
   const double dm31 = dm31_->getVal();
   const double sin14 = sin14_->getVal();
   const double dm41 = dm41_->getVal();
 
-  const double k31 = 1.27 * dm31 * l;
-  const double k41 = 1.27 * dm41 * l;
-
   std::vector<double> elemFracs;
-  for (int i = 0; i < elemFracs_.getSize(); ++i) {
-    const RooAbsReal &elemFrac = static_cast<const RooAbsReal &>(elemFracs_[i]);
+  for (int iF = 0; iF < elemFracs_.getSize(); ++iF) {
+    const RooAbsReal &elemFrac = static_cast<const RooAbsReal &>(elemFracs_[iF]);
     elemFracs.push_back(elemFrac.getVal());
   }
 
   double sumW = 0;
-  for (int i = 0, nn = static_cast<int>(binsT_.size()) - 1; i < nn; ++i) {
-    const double e0 = binsT_[i], e1 = binsT_[i + 1];
+  for ( size_t iL = 0; iL < ls_.size(); ++iL ) {
+    const double l = ls_[iL];
+    const double lw = lws_[iL];
 
-    double f0 = 0, f1 = 0;
-    for (size_t j = 0; j < elemFracs.size(); ++j) {
-      f0 += elemFracs[j] * interpolate(e0, elemSpectsX_[j], elemSpectsY_[j]);
-      f1 += elemFracs[j] * interpolate(e1, elemSpectsX_[j], elemSpectsY_[j]);
+    const double k31 = 1.27 * dm31 * l;
+    const double k41 = 1.27 * dm41 * l;
+
+    double sumWL = 0;
+    for (int iE = 0, nE = static_cast<int>(binsT_.size()) - 1; iE < nE; ++iE) {
+      const double e0 = binsT_[iE], e1 = binsT_[iE + 1];
+      const double s0 = interpolate(e0, ibdXsecX_, ibdXsecY_);
+      const double s1 = interpolate(e1, ibdXsecX_, ibdXsecY_);
+
+      double f0 = 0, f1 = 0;
+      for (size_t iF = 0; iF < elemFracs.size(); ++iF) {
+        f0 += elemFracs[iF] * interpolate(e0, elemSpectsX_[iF], elemSpectsY_[iF]);
+        f1 += elemFracs[iF] * interpolate(e1, elemSpectsX_[iF], elemSpectsY_[iF]);
+      }
+
+      sumWL += respMat_(idx, iE) * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
     }
-    const double s0 = interpolate(e0, ibdXsecX_, ibdXsecY_);
-    const double s1 = interpolate(e1, ibdXsecX_, ibdXsecY_);
-
-    sumW += respMat_(idx, i) * subIntegral(e0, e1, f0, f1, s0, s1, sin13, k31, sin14, k41);
+    sumW += lw*sumWL;
   }
 
   return sumW;

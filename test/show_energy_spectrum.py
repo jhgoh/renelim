@@ -95,6 +95,7 @@ if isinstance(response, str):
 ###############################################################################
 ## Neutrino energy spectrums
 ###############################################################################
+"""
 elemNames = config.getReactors('elements')[reactorIdx]['name']
 grps_HM = ROOT.std.vector('TGraph')()
 for elemName in elemNames:
@@ -125,11 +126,13 @@ legHM.Draw()
 del(maxY)
 
 cHM.Update()
+"""
 ################################################################################
 
 ###############################################################################
 ## IBD cross section
 ###############################################################################
+"""
 _, grp_Xsec = getFileAndObj(config.get('physics.ibd_xsec'))
 ROOT.gROOT.cd()
 idx = np.searchsorted(grp_Xsec.GetX(), maxENu)
@@ -143,6 +146,18 @@ hFrameIBDXsec.Draw()
 grp_Xsec.Draw("Lsame")
 
 cIBDXsec.Update()
+"""
+################################################################################
+
+################################################################################
+## Baseline smearing
+################################################################################
+_, hBaseline = getFileAndObj(config.get('physics.baseline'))
+ROOT.gROOT.cd()
+cBaseline = ROOT.TCanvas("cBaseline", "Baseline", 500, 500)
+hBaseline.Draw()
+
+cBaseline.Update()
 ################################################################################
 
 ################################################################################

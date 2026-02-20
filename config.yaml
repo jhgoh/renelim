@@ -24,16 +24,16 @@ physics:
     dm31: [2.45e-3, 3.0e-5] ## delta m^2_32 (eV^2), Normal ordering
     delta_cp: [195, 25] ## degree, T2K(2021) and NOvA
 
+  ## Baseline factors
+  baseline: "data/baseline.root:hBaseline"
+
 ## Detector configuration
 detectors:
   - name: RENE0
     position: [20.0, 0, -11.36] ## Location to be decided
     efficiency: 0.8 ## To be updated
     n_protons: 2.1e28 ## To be updated
-    #response: "data/response_ibd_gaus.root:hResp_ENu_vs_Ereco" ## response matrix TH2D, (x=E_nu, y=E_reco)
     response: "data/response_gaus.root:hResp_ETrue_vs_EReco" ## response matrix TH2D, (x=E_nu, y=E_reco)
-    #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/IDEAL2.root:h_resonse_5" ## RENE IDEAL geometry
-    #response: "/users/cpnr/wonsang1995/work/RAT_0611/renesim/test/work7/Resolution_like_RENO/resolution_IBD/RECENT2.root:h_resonse_5" ## RENE IDEAL geometry
 
 ## Reactor configuration
 ## Locations are found from Nucler Engineering and Technology 49 (2017) 813-819
