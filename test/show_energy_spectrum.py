@@ -95,12 +95,12 @@ if isinstance(response, str):
 ###############################################################################
 ## Neutrino energy spectrums
 ###############################################################################
-"""
 elemNames = config.getReactors('elements')[reactorIdx]['name']
 grps_HM = ROOT.std.vector('TGraph')()
 for elemName in elemNames:
-    _, grp = getFileAndObj(config.get(f'physics.isotope_flux.{elemName}'))
+    x, y = loadYamlData(config.get(f'physics.isotope_flux.{elemName}'))
     ROOT.gROOT.cd()
+    grp = ROOT.TGraph(len(x), array('d', x), array('d', y))
     grps_HM.push_back(grp.Clone())
     del(grp)
 
@@ -114,7 +114,7 @@ maxY = 0
 colors = [ROOT.kRed+1, ROOT.kBlue+2, ROOT.kGreen+3, ROOT.kViolet+5, ROOT.kOrange+7]
 for grp, elemName, color in zip(grps_HM, elemNames, colors):
   grp.SetLineColor(color)
-  maxY = max(maxY, max(grp.GetY()))
+  maxY = max(maxY, max(grp.GetPointY(i) for i in range(grp.GetN())))
   grp.SetEditable(False)
   legHM.AddEntry(grp, elemName)
 
@@ -126,17 +126,17 @@ legHM.Draw()
 del(maxY)
 
 cHM.Update()
-"""
 ################################################################################
 
 ###############################################################################
 ## IBD cross section
 ###############################################################################
-"""
-_, grp_Xsec = getFileAndObj(config.get('physics.ibd_xsec'))
+x, y = loadYamlData(config.get('physics.ibd_xsec'))
+grp_Xsec = ROOT.TGraph(len(x), array('d', x), array('d', y))
 ROOT.gROOT.cd()
-idx = np.searchsorted(grp_Xsec.GetX(), maxENu)
-maxY = grp_Xsec.GetY()[idx]
+idx = np.searchsorted(x, maxENu, side='right') - 1
+idx = np.clip(idx, 0, len(y)-1)
+maxY = y[idx]
 
 ROOT.gROOT.cd()
 cIBDXsec = ROOT.TCanvas("cIBDXsec", "IBD cross section", 500, 500)
@@ -146,7 +146,6 @@ hFrameIBDXsec.Draw()
 grp_Xsec.Draw("Lsame")
 
 cIBDXsec.Update()
-"""
 ################################################################################
 
 ################################################################################
