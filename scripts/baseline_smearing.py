@@ -27,14 +27,14 @@ parser.add_argument('--det-z', type=float, default=-11.5+1.5,
 parser.add_argument('--det-y', type=float, default=20+1.5,
                     help='horizontal distance between the detector and the core')
 
-parser.add_argument('--hist-nbins', type=int, default=100,
+parser.add_argument('--hist-nbins', type=int, default=200,
                     help='Number of bins')
 parser.add_argument('--hist-xmin', type=float, default=20,
                     help='Minimum of histogram x-axis')
 parser.add_argument('--hist-xmax', type=float, default=30,
                     help='Maximum of histogram x-axis')
 
-parser.add_argument('-n', type=int, default=100000,
+parser.add_argument('-n', type=int, default=10000000,
                     help='Number of MC samples')
 parser.add_argument('-o', '--output', type=str, default='baseline.root',
                     help='Output ROOT file name for baseline distribution')
@@ -61,10 +61,16 @@ def generate_cylinder(radius, height, n):
 
   return x, y, z
 
+print(f"@@@ Generating {n} points...")
+print(f"    Core radius={args.core_radius}, height={args.core_height}")
+print(f"         z-position={args.core_z}")
 coreX, coreY, coreZ = generate_cylinder(args.core_radius, args.core_height, n)
 coreR = np.hypot(coreX, coreY)
 coreZ += args.core_z
 
+print(f"    Detector radius={args.det_radius} length={args.det_length}")
+print(f"             z-position={args.det_z} horizontal distance={args.det_y}")
+print(f"             orientation={args.det_orientation}")
 detX, detY, detZ = generate_cylinder(args.det_radius, args.det_length, n)
 if args.det_orientation == 'horizontal':
   detZ, detX = detX, detZ 
@@ -72,6 +78,8 @@ detY += args.det_y
 detZ += args.det_z
 
 ## Estimate weight due to the fuel power
+print(f"@@@ Applying fuel power profile...")
+print(f"    Shape axial={args.core_axial_shape}, radial={args.core_radial_shape}")
 wZ = np.ones_like(coreZ)
 wR = np.ones_like(coreR)
 if args.core_axial_shape == 'cosine':
@@ -87,8 +95,10 @@ dx, dy, dz = coreX-detX, coreY-detY, coreZ-detZ
 l = np.sqrt(dx*dx + dy*dy + dz*dz)
 
 ## Save them
+print(f"@@@ Fill histogram...")
 nbins = args.hist_nbins
 xmin, xmax = args.hist_xmin, args.hist_xmax
+print(f"    nbins={nbins}, xmin={xmin}, xmax={xmax}")
 h = ROOT.TH1D("hBaseline", "Baseline;Baseline (m);Arbitrary", nbins, xmin, xmax)
 for i in range(n):
   print(f'{i+1}/{n}', end='\r')
@@ -105,6 +115,7 @@ if args.gui:
   c.Update()
   input('Press return to exit')
 
+print(f"@@@ Saving {args.output}...")
 f = ROOT.TFile(args.output, "recreate")
 h.Write()
 f.Close()
