@@ -1,18 +1,50 @@
 # RENELim: Limit calculation for RENE project
 
+RENELim computes exclusion limits on sterile neutrino oscillation parameters
+($\sin^2 2\theta_{14}$, $\Delta m^2_{41}$) using reactor antineutrinos detected
+via inverse beta decay (IBD). The analysis targets the Hanbit nuclear power plant
+reactors and the RENE near-detector and is built on top of RooFit.
+
+## Project structure
+
+```
+config.yaml          Main configuration (detector, reactors, physics)
+data/                Physics input tables (flux models, IBD cross section)
+python/
+  Config.py          YAML configuration loader
+  ModelConfig.py     RooFit workspace builder
+scripts/
+  response_gaus.py   Generate a Gaussian detector response matrix
+  baseline_smearing.py  Generate a baseline distribution from core/detector geometry
+src/
+  NuOscIBDPdf        Unbinned neutrino oscillation IBD RooFit PDF
+  BinnedNuOscIBDPdf  Binned version with detector response matrix
+test/
+  run_chi2.py        NLL scan and p-value calculation via toy MC
+  show_chi2.py       Visualise limits (3σ/5σ contours)
+  show_energy_spectrum.py  Inspect energy spectrum interactively
+  submit_chi2.py     Dispatch grid scan jobs to a SLURM batch system
+```
+
+See [`src/README.md`](src/README.md) for the mathematical details and API of the
+RooFit PDF classes.
+
 ## Initial setup
 
-Install [mamba](https://mamba.readthedocs.io) (or [conda](https://docs.conda.io)) and create the environment:
+Install [mamba](https://mamba.readthedocs.io) (or [conda](https://docs.conda.io))
+and create the environment:
 
 ```bash
-mamba create -n hep2026.01 -c conda-forge root numpy pandas tqdm pyyaml -y
+mamba create -n hep2026.01 -c conda-forge root numpy pandas scipy tqdm pyyaml -y
 mamba activate hep2026.01
 ```
 
-### Response matrix
+## Typical analysis workflow
 
-The detector response matrix must be generated before running the fit.
-A Gaussian smearing response can be created with:
+### 1. Generate the response matrix
+
+The detector response matrix must be created before running the fit.
+The default Gaussian smearing matrix is built with:
 
 ```bash
 python scripts/response_gaus.py
@@ -20,14 +52,96 @@ python scripts/response_gaus.py
 
 This produces `data/response_gaus.root` used by the default `config.yaml`.
 
+Optional arguments control the energy resolution model
+$\sigma(E) = \sqrt{a^2 E + b^2 E^2 + c^2}$:
+
+| Option | Default | Description |
+|---|---|---|
+| `--a` | 0.06 | Stochastic term |
+| `--b` | 0.01 | Proportional term |
+| `--c` | 0.0005 | Constant term |
+| `--xmin` / `--xmax` | 0.0 / 10.0 MeV | Energy range |
+| `--dx` | 0.1 MeV | Bin width |
+| `-o` | `response_gaus.root` | Output file |
+| `-g` | — | Open a ROOT canvas to inspect the matrix |
+
+### 2. (Optional) Generate the baseline distribution
+
+To account for the finite sizes of the reactor core and the detector volume,
+a baseline smearing histogram can be produced with:
+
+```bash
+python scripts/baseline_smearing.py
+```
+
+Key options:
+
+| Option | Default | Description |
+|---|---|---|
+| `--core-height` | 3.8 m | Reactor core height |
+| `--core-radius` | 1.75 m | Reactor core radius |
+| `--det-length` | 1.2 m | Detector length |
+| `--det-radius` | 0.267 m | Detector radius |
+| `--det-orientation` | `horizontal` | `vertical` or `horizontal` |
+| `-n` | 10 000 000 | Number of MC samples |
+| `-o` | `baseline.root` | Output file |
+
+### 3. Configure
+
+Edit `config.yaml` to match your setup. The file has three main sections:
+
+- **`physics`** – flux model (`huber` or `mueller`) and oscillation parameters
+- **`detectors`** – position, efficiency, number of target protons, response matrix
+- **`reactors`** – Hanbit units 1–6 positions and thermal powers
+
+### 4. Run the NLL scan
+
+```bash
+python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
+```
+
+| Option | Description |
+|---|---|
+| `-m`, `--dm41` | $\Delta m^2_{41}$ value (eV²) |
+| `-n`, `--nsignal` | Expected number of signal events |
+| `-s`, `--sin14` | Comma-separated $\sin^2 2\theta_{14}$ values to scan (default: automatic grid) |
+| `--toys` | Number of toy MC samples for p-value estimation |
+| `--seed` | Random number seed |
+| `-o` | Output ROOT file |
+
+### 5. Visualise results
+
+```bash
+python test/show_chi2.py
+```
+
+This draws the expected exclusion limits together with 3σ and 5σ contours
+from the ROOT files matching `results/result_*_nSignal_1000.root`.
+
+### 6. Inspect the energy spectrum
+
+```bash
+python test/show_energy_spectrum.py
+```
+
+Compiles the required ROOT classes on the fly and opens several canvases
+displaying the detector-smeared spectrum. Press `Enter` to close them.
+
+### 7. Batch grid scan
+
+To submit a full ($\sin^2 2\theta_{14}$, $\Delta m^2_{41}$) grid to a SLURM
+cluster:
+
+```bash
+python test/submit_chi2.py
+```
+
+This creates the `results/` directory and dispatches jobs defined in
+`test/run_chi2.sbatch`.
+
 ## Configuration
 
-The behaviour of RENELim is controlled via `config.yaml`. Detector
-positions, reactor properties and response matrices can be adjusted by
-editing this file to match your setup.
-
-Physics inputs (neutrino flux and IBD cross section) are stored as YAML
-tables in `data/`:
+### Physics inputs
 
 | File | Contents |
 |---|---|
@@ -35,52 +149,13 @@ tables in `data/`:
 | `data/mueller.yaml` | Mueller flux for U235, U238, Pu239, Pu241 |
 | `data/ibdxsec.yaml` | IBD cross section |
 
-Select which model to use by editing the `physics.isotope_flux` and
-`physics.ibd_xsec` keys in `config.yaml`.
+Select the model via `physics.isotope_flux` and `physics.ibd_xsec` in `config.yaml`.
 
-## Running the NLL scan
-
-The script `test/run_chi2.py` automatically compiles the RooFit PDF and
-performs a negative log-likelihood (NLL) scan. P-values are obtained using
-toy Monte Carlo samples.
-
-```bash
-python test/run_chi2.py -m 1.0 -n 1000 -o results/result_dm41_1.root --toys 1000
-```
-
-The resulting ROOT files can be visualised with:
-
-```bash
-python test/show_chi2.py
-```
-
-This script draws the expected limits together with 3σ and 5σ contours.
-
-For a full grid scan on a batch system you can submit many jobs using
-
-```bash
-python test/submit_chi2.py
-```
-
-This script creates a `results` directory and dispatches `sbatch`
-jobs defined in `test/run_chi2.sbatch`.
-
-## Visualising the energy spectrum
-
-To inspect the detector smearing and flux models interactively run:
-
-```bash
-python test/show_energy_spectrum.py
-```
-
-The script compiles the necessary ROOT classes on the fly and opens
-several canvases displaying the spectrum. Press `Enter` to close them.
-
-## Python modules
+### Python modules
 
 | Module | Description |
 |---|---|
-| `python/Config.py` | YAML configuration loader (`Config`, `ConfigRENE`). Also provides `loadYamlData()` for reading flux/xsec tables. |
+| `python/Config.py` | YAML configuration loader (`Config`, `ConfigRENE`). Also provides `loadYamlData()` for reading flux/cross-section tables. |
 | `python/ModelConfig.py` | Builds the full RooFit workspace from a configuration file (`load_model()`). |
 
 ## Reference of original data files
