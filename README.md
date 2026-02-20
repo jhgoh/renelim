@@ -14,8 +14,8 @@ python/
   Config.py          YAML configuration loader
   ModelConfig.py     RooFit workspace builder
 scripts/
-  response_gaus.py   Generate a Gaussian detector response matrix
-  baseline_smearing.py  Generate a baseline distribution from core/detector geometry
+  response_gaus.py   Build detector response matrix ROOT files used by binned PDFs
+  baseline_smearing.py  Build baseline-smearing histograms from core/detector geometry
 src/
   NuOscIBDPdf        Unbinned neutrino oscillation IBD RooFit PDF
   BinnedNuOscIBDPdf  Binned version with detector response matrix
@@ -47,27 +47,11 @@ mamba activate hep2026.01
 
 ## Typical analysis workflow
 
-### 1. Generate the response matrix
+### 1. Generate analysis inputs (`scripts/`)
 
-The detector response matrix must be created before running the fit.
-The default Gaussian smearing matrix is built with:
+Before fitting, generate both detector and geometry smearing inputs: run `python scripts/response_gaus.py` to create detector response matrix files (default output includes `data/response_gaus.root`, used by `config.yaml`), and run `python scripts/baseline_smearing.py` to create the baseline-smearing histogram that models finite reactor-core and detector-volume effects.
 
-```bash
-python scripts/response_gaus.py
-```
-
-This produces `data/response_gaus.root` used by the default `config.yaml`.
-
-### 2. Generate the baseline distribution
-
-To account for the finite sizes of the reactor core and the detector volume,
-generate the baseline smearing histogram with:
-
-```bash
-python scripts/baseline_smearing.py
-```
-
-### 3. Configure
+### 2. Configure
 
 Edit `config.yaml` to match your setup. The file has three main sections:
 
@@ -75,7 +59,7 @@ Edit `config.yaml` to match your setup. The file has three main sections:
 - **`detectors`** – position, efficiency, number of target protons, response matrix
 - **`reactors`** – Hanbit units 1–6 positions and thermal powers
 
-### 4. Inspect the energy spectrum
+### 3. Inspect the energy spectrum
 
 ```bash
 python test/show_energy_spectrum.py
@@ -84,7 +68,7 @@ python test/show_energy_spectrum.py
 Compiles the required ROOT classes on the fly and opens several canvases
 displaying the detector-smeared spectrum. Press `Enter` to close them.
 
-### 5. Run the NLL scan
+### 4. Run the NLL scan
 
 ```bash
 mkdir -p results
@@ -97,7 +81,7 @@ Useful options:
 - `--seed`: random seed for reproducible toy studies
 - `-g/--gui`: display ROOT canvases while running
 
-### 6. Visualise results
+### 5. Visualise results
 
 ```bash
 python test/show_chi2.py
@@ -106,7 +90,7 @@ python test/show_chi2.py
 This draws the expected exclusion limits together with 3σ and 5σ contours
 from the ROOT files matching `results/result_*_nSignal_1000.root`.
 
-### 7. Batch grid scan
+### 6. Batch grid scan
 
 To submit a full ($\sin^2 2\theta_{14}$, $\Delta m^2_{41}$) grid to a SLURM
 cluster:
@@ -144,6 +128,13 @@ Select the model via `physics.isotope_flux` and `physics.ibd_xsec` in `config.ya
 |---|---|
 | `python/Config.py` | YAML configuration loader (`Config`, `ConfigRENE`). Also provides `loadYamlData()` for reading flux/cross-section tables. |
 | `python/ModelConfig.py` | Builds the full RooFit workspace from a configuration file (`load_model()`). |
+
+### Scripts
+
+| Script | Details |
+|---|---|
+| `scripts/response_gaus.py` | Generates detector response matrices in ROOT format. This script is meant for quick studies with Gaussian energy smearing; the produced histogram is consumed by `BinnedNuOscIBDPdf` through `config.yaml` (default: `data/response_gaus.root`). |
+| `scripts/baseline_smearing.py` | Generates a baseline-distribution histogram from reactor-core and detector geometry. The histogram weights baseline-dependent oscillation phases in `BinnedNuOscIBDPdf` and should be regenerated if geometry assumptions are changed. |
 
 ## Reference of original data files
 
