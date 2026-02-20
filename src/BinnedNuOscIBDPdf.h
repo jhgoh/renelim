@@ -65,6 +65,15 @@ protected:
   double analyticalIntegral(int code, const char *rangeName = 0) const override;
 
 private:
+  // Cache of the full reconstructed-energy spectrum for the current parameter
+  // values.  fillCache() recomputes it whenever the oscillation parameters
+  // change; evaluate() then returns the appropriate cached bin value.
+  void fillCache() const;
+
+  mutable std::vector<double> cache_;
+  mutable double cachedSin13_ = -1.0, cachedDm31_ = -1.0;
+  mutable double cachedSin14_ = -1.0, cachedDm41_ = -1.0;
+
   ClassDef(BinnedNuOscIBDPdf, 1) // RooFit class definition
 };
 
